@@ -1,0 +1,9 @@
+.DS_Store
+.env
+node_modules/
+dist/
+*.log
+*.tar.gz
+*.zip
+data/*.json
+!data/asean-hub.example.json

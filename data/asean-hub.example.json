@@ -1,0 +1,1076 @@
+{
+  "version": 1,
+  "settings": {
+    "companyName": "Asean Holding",
+    "currency": "USD",
+    "defaultTeacherRate": 8,
+    "defaultStudentRate": 14,
+    "vpsNote": "Dữ liệu demo đang lưu trong file data/asean-hub.json trên máy chủ Node/VPS."
+  },
+  "accounts": [
+    {
+      "id": "acc-admin",
+      "role": "admin",
+      "name": "Asean Holding Admin",
+      "email": "admin@aseanholding.com",
+      "status": "active",
+      "createdAt": "2026-05-19T08:00:00.000Z",
+      "presence": "online",
+      "lastSeenAt": "2026-05-23T13:27:24.712Z",
+      "lastLoginAt": "2026-05-23T13:27:24.712Z",
+      "lastLogoutAt": "2026-05-23T04:36:01.298Z",
+      "passwordHash": "11989ee0b15d2c1df5f32fa187d37d1dd90a7c7afd03ae86fe5ab328b9d28f95",
+      "passwordSalt": "d488ffe925a1745bac5ecc4e402fec5b",
+      "passwordIterations": 210000,
+      "passwordUpdatedAt": "2026-05-23T12:14:29.836Z"
+    },
+    {
+      "id": "acc-teacher-maria",
+      "role": "teacher",
+      "profileId": "teacher-maria",
+      "name": "Maria Santos",
+      "email": "maria.santos@aseanholding.com",
+      "status": "active",
+      "createdAt": "2026-05-19T08:05:00.000Z",
+      "presence": "online",
+      "lastSeenAt": "2026-05-23T13:26:05.540Z",
+      "lastLoginAt": "2026-05-23T13:26:05.540Z",
+      "lastLogoutAt": "2026-05-23T03:54:48.435Z",
+      "passwordHash": "c5450e76da33973a2574c061f55e020d304aa07d11e8f67c4e70a0910b2f93c9",
+      "passwordSalt": "1608d972ae0714ed03c93166b1925032",
+      "passwordIterations": 210000,
+      "passwordUpdatedAt": "2026-05-23T12:14:29.958Z"
+    },
+    {
+      "id": "acc-teacher-joel",
+      "role": "teacher",
+      "profileId": "teacher-joel",
+      "name": "Joel Reyes",
+      "email": "joel.reyes@aseanholding.com",
+      "status": "active",
+      "createdAt": "2026-05-19T08:06:00.000Z",
+      "presence": "offline",
+      "lastSeenAt": "2026-05-19T08:06:00.000Z",
+      "lastLoginAt": "",
+      "lastLogoutAt": "",
+      "passwordHash": "7dcc5a0bd56294adf5c36416707c3a18212dac4f5368feb76674f2c62e2d84da",
+      "passwordSalt": "464ff2d1fee9d042df277341a4b1da67",
+      "passwordIterations": 210000,
+      "passwordUpdatedAt": "2026-05-23T12:14:30.075Z"
+    },
+    {
+      "id": "acc-student-linh",
+      "role": "student",
+      "profileId": "student-linh",
+      "name": "Nguyen Linh",
+      "email": "linh.nguyen@example.com",
+      "status": "active",
+      "createdAt": "2026-05-19T08:07:00.000Z",
+      "presence": "online",
+      "lastSeenAt": "2026-05-23T13:26:12.178Z",
+      "lastLoginAt": "2026-05-23T13:26:12.178Z",
+      "lastLogoutAt": "2026-05-23T03:56:52.671Z",
+      "passwordHash": "b5348ace0b79831bbbaebb7c04838579d093b0255b25d64af578f05109b0ab87",
+      "passwordSalt": "4689d50b336eacc054fdebf458b944e1",
+      "passwordIterations": 210000,
+      "passwordUpdatedAt": "2026-05-23T12:14:30.194Z"
+    },
+    {
+      "id": "acc-student-ken",
+      "role": "student",
+      "profileId": "student-ken",
+      "name": "Kenji Tanaka",
+      "email": "kenji.tanaka@example.com",
+      "status": "active",
+      "createdAt": "2026-05-19T08:08:00.000Z",
+      "presence": "offline",
+      "lastSeenAt": "2026-05-19T08:08:00.000Z",
+      "lastLoginAt": "",
+      "lastLogoutAt": "",
+      "passwordHash": "1e7cac29dd28443ad881399e9004ee211501008c6b32a9fb6cab8b3306f34d43",
+      "passwordSalt": "6e99fbb4f93f5d3a3d52d645341ab574",
+      "passwordIterations": 210000,
+      "passwordUpdatedAt": "2026-05-23T12:14:30.310Z"
+    },
+    {
+      "id": "acc-student-sara",
+      "role": "student",
+      "profileId": "student-sara",
+      "name": "Sara Ahmed",
+      "email": "sara.ahmed@example.com",
+      "status": "active",
+      "createdAt": "2026-05-19T08:09:00.000Z",
+      "presence": "offline",
+      "lastSeenAt": "2026-05-19T08:09:00.000Z",
+      "lastLoginAt": "",
+      "lastLogoutAt": "",
+      "passwordHash": "6f0e401ebf78fbf6a063c2689baa880f5a33c01824a99485766c008e66928ad9",
+      "passwordSalt": "6d83f20a6b013b8827635f62ce2000be",
+      "passwordIterations": 210000,
+      "passwordUpdatedAt": "2026-05-23T12:14:30.434Z"
+    }
+  ],
+  "teachers": [
+    {
+      "id": "teacher-maria",
+      "name": "Maria Santos",
+      "email": "maria.santos@aseanholding.com",
+      "country": "Philippines",
+      "city": "Cebu",
+      "timezone": "Asia/Manila",
+      "ratePerHour": 8,
+      "specialties": [
+        "IELTS Speaking",
+        "Business English",
+        "Pronunciation"
+      ],
+      "rating": 4.9,
+      "status": "active",
+      "avatarColor": "#0f766e"
+    },
+    {
+      "id": "teacher-joel",
+      "name": "Joel Reyes",
+      "email": "joel.reyes@aseanholding.com",
+      "country": "Philippines",
+      "city": "Manila",
+      "timezone": "Asia/Manila",
+      "ratePerHour": 9,
+      "specialties": [
+        "Conversation",
+        "Grammar",
+        "Kids English"
+      ],
+      "rating": 4.8,
+      "status": "active",
+      "avatarColor": "#b45309"
+    }
+  ],
+  "students": [
+    {
+      "id": "student-linh",
+      "name": "Nguyen Linh",
+      "email": "linh.nguyen@example.com",
+      "country": "Vietnam",
+      "city": "Ha Noi",
+      "timezone": "Asia/Ho_Chi_Minh",
+      "level": "B1",
+      "goal": "Phỏng vấn du học Canada",
+      "studentRatePerHour": 14,
+      "status": "active",
+      "avatarColor": "#2563eb"
+    },
+    {
+      "id": "student-ken",
+      "name": "Kenji Tanaka",
+      "email": "kenji.tanaka@example.com",
+      "country": "Japan",
+      "city": "Tokyo",
+      "timezone": "Asia/Tokyo",
+      "level": "A2",
+      "goal": "Giao tiếp công việc",
+      "studentRatePerHour": 16,
+      "status": "active",
+      "avatarColor": "#be123c"
+    },
+    {
+      "id": "student-sara",
+      "name": "Sara Ahmed",
+      "email": "sara.ahmed@example.com",
+      "country": "UAE",
+      "city": "Dubai",
+      "timezone": "Asia/Dubai",
+      "level": "B2",
+      "goal": "IELTS 6.5",
+      "studentRatePerHour": 18,
+      "status": "active",
+      "avatarColor": "#7c3aed"
+    }
+  ],
+  "lessons": [
+    {
+      "id": "lesson-001",
+      "teacherId": "teacher-maria",
+      "studentId": "student-linh",
+      "title": "IELTS speaking - Study abroad interview",
+      "date": "2026-05-19",
+      "startTime": "20:00",
+      "durationHours": 1,
+      "teacherRatePerHour": 8,
+      "studentRatePerHour": 14,
+      "status": "scheduled",
+      "roomId": "asean-lesson-001",
+      "adminStarted": false,
+      "notes": "Tập trung trả lời câu hỏi visa và mục tiêu học tập.",
+      "callStartedBy": null,
+      "callStartedAt": null
+    },
+    {
+      "id": "lesson-002",
+      "teacherId": "teacher-joel",
+      "studentId": "student-ken",
+      "title": "Daily conversation",
+      "date": "2026-05-20",
+      "startTime": "18:30",
+      "durationHours": 1,
+      "teacherRatePerHour": 9,
+      "studentRatePerHour": 16,
+      "status": "scheduled",
+      "roomId": "asean-lesson-002",
+      "adminStarted": false,
+      "notes": "Luyện tình huống công sở."
+    },
+    {
+      "id": "lesson-003",
+      "teacherId": "teacher-maria",
+      "studentId": "student-sara",
+      "title": "IELTS mock test",
+      "date": "2026-05-18",
+      "startTime": "21:00",
+      "durationHours": 1.5,
+      "teacherRatePerHour": 8,
+      "studentRatePerHour": 18,
+      "status": "completed",
+      "roomId": "asean-lesson-003",
+      "adminStarted": false,
+      "notes": "Hoàn thành mock test part 2 và part 3.",
+      "callStartedBy": null,
+      "callStartedAt": null
+    },
+    {
+      "id": "lesson-004",
+      "teacherId": "teacher-joel",
+      "studentId": "student-linh",
+      "title": "Grammar clinic",
+      "date": "2026-05-21",
+      "startTime": "19:00",
+      "durationHours": 1,
+      "teacherRatePerHour": 9,
+      "studentRatePerHour": 14,
+      "status": "scheduled",
+      "roomId": "asean-lesson-004",
+      "adminStarted": false,
+      "notes": "Tenses and linking ideas."
+    }
+  ],
+  "notifications": [
+    {
+      "id": "notice-001",
+      "audience": "all",
+      "title": "Quy định vào lớp",
+      "message": "Giáo viên và học viên vui lòng vào phòng trước giờ học 5 phút để kiểm tra camera, microphone và tài liệu.",
+      "createdBy": "acc-admin",
+      "createdAt": "2026-05-19T09:00:00.000Z"
+    },
+    {
+      "id": "notice-002",
+      "audience": "teacher",
+      "title": "Báo cáo sau buổi học",
+      "message": "Sau mỗi buổi học, giáo viên cập nhật ghi chú tiến độ để admin theo dõi chất lượng lớp.",
+      "createdBy": "acc-admin",
+      "createdAt": "2026-05-19T09:10:00.000Z"
+    }
+  ],
+  "callState": {
+    "activeLessonId": null,
+    "activeLessonIds": [],
+    "startedBy": null,
+    "startedAt": null
+  },
+  "placementTests": [
+    {
+      "id": "placement-sample-1",
+      "templateId": "template-foundation-a1-a2",
+      "studentId": "student-linh",
+      "title": "Foundation English Placement",
+      "level": "A1-A2",
+      "durationMinutes": 45,
+      "dueDate": "2026-05-31",
+      "status": "in_progress",
+      "sections": [
+        {
+          "key": "listening",
+          "title": "Nghe",
+          "prompt": "Học viên đọc tình huống như một đoạn nghe mô phỏng, sau đó chọn đáp án phù hợp.",
+          "questions": [
+            {
+              "id": "l1",
+              "type": "select",
+              "question": "Audio prompt: Anna says she studies English every Tuesday and Thursday evening. When does Anna study English?",
+              "options": [
+                "Monday and Friday",
+                "Tuesday and Thursday evening",
+                "Every morning"
+              ],
+              "answer": "Tuesday and Thursday evening",
+              "points": 10
+            },
+            {
+              "id": "l2",
+              "type": "select",
+              "question": "Audio prompt: The class starts at 7:30 PM and finishes at 8:30 PM. How long is the class?",
+              "options": [
+                "30 minutes",
+                "1 hour",
+                "2 hours"
+              ],
+              "answer": "1 hour",
+              "points": 10
+            }
+          ],
+          "audioDataUrl": "",
+          "audioName": ""
+        },
+        {
+          "key": "speaking",
+          "title": "Nói",
+          "prompt": "Học viên trả lời bằng tiếng Anh. Admin có thể phỏng vấn trực tiếp hoặc yêu cầu học viên ghi câu trả lời.",
+          "questions": [
+            {
+              "id": "s1",
+              "type": "textarea",
+              "question": "Introduce yourself in 4-5 sentences: name, city, job/study, and why you want to learn English.",
+              "points": 10
+            },
+            {
+              "id": "s2",
+              "type": "textarea",
+              "question": "Describe your daily routine using simple present tense.",
+              "points": 10
+            }
+          ],
+          "audioDataUrl": "",
+          "audioName": ""
+        },
+        {
+          "key": "reading",
+          "title": "Đọc hiểu",
+          "prompt": "Read: Minh works in Hanoi. He needs English for emails and short meetings. He can read simple messages but feels nervous when speaking.",
+          "questions": [
+            {
+              "id": "r1",
+              "type": "select",
+              "question": "Why does Minh need English?",
+              "options": [
+                "For emails and meetings",
+                "For cooking",
+                "For travel only"
+              ],
+              "answer": "For emails and meetings",
+              "points": 10
+            },
+            {
+              "id": "r2",
+              "type": "select",
+              "question": "What is difficult for Minh?",
+              "options": [
+                "Speaking",
+                "Reading simple messages",
+                "Writing his name"
+              ],
+              "answer": "Speaking",
+              "points": 10
+            }
+          ],
+          "audioDataUrl": "",
+          "audioName": ""
+        },
+        {
+          "key": "comprehension",
+          "title": "Hiểu và phản hồi",
+          "prompt": "Kiểm tra khả năng hiểu yêu cầu và phản hồi đúng ngữ cảnh.",
+          "questions": [
+            {
+              "id": "c1",
+              "type": "textarea",
+              "question": "A customer asks: 'Can we move the meeting to Friday?' Write a short polite reply.",
+              "points": 10
+            }
+          ],
+          "audioDataUrl": "",
+          "audioName": ""
+        },
+        {
+          "key": "pronunciation",
+          "title": "Phát âm",
+          "prompt": "Admin yêu cầu học viên đọc to các câu sau và ghi nhận lỗi âm cuối, trọng âm, nối âm.",
+          "questions": [
+            {
+              "id": "p1",
+              "type": "textarea",
+              "question": "Read aloud: 'I usually practice English in the evening because I want to speak clearly.' Note any words you find difficult.",
+              "points": 10
+            }
+          ],
+          "audioDataUrl": "",
+          "audioName": ""
+        }
+      ],
+      "answers": {},
+      "scores": {
+        "listening": 0,
+        "speaking": 0,
+        "reading": 0,
+        "comprehension": 0,
+        "pronunciation": 0
+      },
+      "feedback": "",
+      "teachingPlan": "",
+      "createdBy": "acc-admin",
+      "createdAt": "2026-05-22T02:00:00.000Z",
+      "startedAt": "2026-05-22T12:25:28.551Z",
+      "submittedAt": null,
+      "reviewedBy": null,
+      "reviewedAt": null,
+      "answerAudio": {}
+    },
+    {
+      "id": "placement-sample-2",
+      "templateId": "template-communication-a2-b1",
+      "studentId": "student-ken",
+      "title": "Communication Placement",
+      "level": "A2-B1",
+      "durationMinutes": 60,
+      "dueDate": "2026-05-31",
+      "status": "submitted",
+      "sections": [
+        {
+          "key": "listening",
+          "title": "Nghe",
+          "prompt": "Học viên đọc đoạn nghe mô phỏng hoặc admin đọc đoạn này trong buổi kiểm tra.",
+          "questions": [
+            {
+              "id": "l1",
+              "type": "select",
+              "question": "Audio prompt: The client wants a short update before noon and a full report by 5 PM. What does the client need first?",
+              "options": [
+                "A full report",
+                "A short update",
+                "A new contract"
+              ],
+              "answer": "A short update",
+              "points": 10
+            },
+            {
+              "id": "l2",
+              "type": "textarea",
+              "question": "Summarize the request in one English sentence.",
+              "points": 10
+            }
+          ],
+          "audioDataUrl": "",
+          "audioName": ""
+        },
+        {
+          "key": "speaking",
+          "title": "Nói",
+          "prompt": "Học viên trả lời bằng tiếng Anh, ưu tiên độ trôi chảy và khả năng triển khai ý.",
+          "questions": [
+            {
+              "id": "s1",
+              "type": "textarea",
+              "question": "Talk about a recent work or study challenge. What happened and how did you solve it?",
+              "points": 10
+            },
+            {
+              "id": "s2",
+              "type": "textarea",
+              "question": "Role-play: Ask a colleague to clarify a task you do not understand.",
+              "points": 10
+            }
+          ],
+          "audioDataUrl": "",
+          "audioName": ""
+        },
+        {
+          "key": "reading",
+          "title": "Đọc hiểu",
+          "prompt": "Read: Thank you for joining the trial class. Based on your speaking goal, we recommend two conversation lessons per week and one pronunciation review every Friday.",
+          "questions": [
+            {
+              "id": "r1",
+              "type": "select",
+              "question": "How many conversation lessons are recommended each week?",
+              "options": [
+                "One",
+                "Two",
+                "Five"
+              ],
+              "answer": "Two",
+              "points": 10
+            },
+            {
+              "id": "r2",
+              "type": "select",
+              "question": "What happens every Friday?",
+              "options": [
+                "Pronunciation review",
+                "Grammar test",
+                "Payment reminder"
+              ],
+              "answer": "Pronunciation review",
+              "points": 10
+            }
+          ],
+          "audioDataUrl": "",
+          "audioName": ""
+        },
+        {
+          "key": "comprehension",
+          "title": "Hiểu và phản hồi",
+          "prompt": "Đánh giá khả năng hiểu ý chính và trả lời có tổ chức.",
+          "questions": [
+            {
+              "id": "c1",
+              "type": "textarea",
+              "question": "Write 3 learning priorities for a student who wants business communication.",
+              "points": 10
+            }
+          ],
+          "audioDataUrl": "",
+          "audioName": ""
+        },
+        {
+          "key": "pronunciation",
+          "title": "Phát âm",
+          "prompt": "Tập trung âm /θ/, /ð/, âm cuối và trọng âm câu.",
+          "questions": [
+            {
+              "id": "p1",
+              "type": "textarea",
+              "question": "Read aloud: 'This Thursday, they will think about three things together.' Note difficult sounds.",
+              "points": 10
+            }
+          ],
+          "audioDataUrl": "",
+          "audioName": ""
+        }
+      ],
+      "answers": {
+        "listening_l1": "A short update",
+        "speaking_s1": "I want to improve English for work and meetings. I need more speaking practice.",
+        "reading_r1": "Two",
+        "comprehension_c1": "Practice speaking twice a week, review pronunciation, and learn business vocabulary.",
+        "pronunciation_p1": "Thursday and three are difficult sounds."
+      },
+      "scores": {
+        "listening": 6,
+        "speaking": 5,
+        "reading": 7,
+        "comprehension": 6,
+        "pronunciation": 5
+      },
+      "feedback": "",
+      "teachingPlan": "",
+      "createdBy": "acc-admin",
+      "createdAt": "2026-05-22T02:00:00.000Z",
+      "startedAt": "2026-05-22T02:10:00.000Z",
+      "submittedAt": "2026-05-22T02:45:00.000Z",
+      "reviewedBy": null,
+      "reviewedAt": null,
+      "answerAudio": {}
+    },
+    {
+      "id": "placement-sample-3",
+      "templateId": "template-academic-b1-b2",
+      "studentId": "student-sara",
+      "title": "IELTS / Academic Placement",
+      "level": "B1-B2",
+      "durationMinutes": 75,
+      "dueDate": "2026-05-31",
+      "status": "reviewed",
+      "sections": [
+        {
+          "key": "listening",
+          "title": "Nghe",
+          "prompt": "Admin có thể đọc prompt như phần listening ngắn, học viên ghi ý chính và chi tiết.",
+          "questions": [
+            {
+              "id": "l1",
+              "type": "textarea",
+              "question": "Audio prompt: A student discusses choosing Canada because of program quality, post-graduation work options, and safety. Write the three reasons.",
+              "points": 10
+            },
+            {
+              "id": "l2",
+              "type": "select",
+              "question": "Which reason is related to career after graduation?",
+              "options": [
+                "Program quality",
+                "Post-graduation work options",
+                "Safety"
+              ],
+              "answer": "Post-graduation work options",
+              "points": 10
+            }
+          ],
+          "audioDataUrl": "",
+          "audioName": ""
+        },
+        {
+          "key": "speaking",
+          "title": "Nói",
+          "prompt": "Mô phỏng IELTS Speaking Part 2 và Part 3.",
+          "questions": [
+            {
+              "id": "s1",
+              "type": "textarea",
+              "question": "Describe an English learning goal you want to achieve. Explain why it matters and how you will measure progress.",
+              "points": 10
+            },
+            {
+              "id": "s2",
+              "type": "textarea",
+              "question": "Do you think online learning can be as effective as offline learning? Give reasons and examples.",
+              "points": 10
+            }
+          ],
+          "audioDataUrl": "",
+          "audioName": ""
+        },
+        {
+          "key": "reading",
+          "title": "Đọc hiểu",
+          "prompt": "Read: A structured learning plan should diagnose current ability, define measurable goals, assign weekly practice, and review progress every month.",
+          "questions": [
+            {
+              "id": "r1",
+              "type": "select",
+              "question": "What should happen before defining a learning plan?",
+              "options": [
+                "Diagnose current ability",
+                "Review progress every year",
+                "Skip weekly practice"
+              ],
+              "answer": "Diagnose current ability",
+              "points": 10
+            },
+            {
+              "id": "r2",
+              "type": "textarea",
+              "question": "Paraphrase the sentence: 'review progress every month'.",
+              "points": 10
+            }
+          ],
+          "audioDataUrl": "",
+          "audioName": ""
+        },
+        {
+          "key": "comprehension",
+          "title": "Hiểu và phản biện",
+          "prompt": "Kiểm tra khả năng tổ chức ý, lập luận và liên kết câu.",
+          "questions": [
+            {
+              "id": "c1",
+              "type": "textarea",
+              "question": "Write a short paragraph recommending a 4-week study plan for an IELTS learner.",
+              "points": 10
+            }
+          ],
+          "audioDataUrl": "",
+          "audioName": ""
+        },
+        {
+          "key": "pronunciation",
+          "title": "Phát âm",
+          "prompt": "Tập trung word stress, sentence stress và clarity khi trả lời dài.",
+          "questions": [
+            {
+              "id": "p1",
+              "type": "textarea",
+              "question": "Read aloud: 'A measurable objective helps learners maintain motivation and evaluate improvement.' Note difficult words.",
+              "points": 10
+            }
+          ],
+          "audioDataUrl": "",
+          "audioName": ""
+        }
+      ],
+      "answers": {
+        "listening_l1": "A short update",
+        "speaking_s1": "I want to improve English for work and meetings. I need more speaking practice.",
+        "reading_r1": "Two",
+        "comprehension_c1": "Practice speaking twice a week, review pronunciation, and learn business vocabulary.",
+        "pronunciation_p1": "Thursday and three are difficult sounds."
+      },
+      "scores": {
+        "listening": 8,
+        "speaking": 7,
+        "reading": 8,
+        "comprehension": 7,
+        "pronunciation": 7
+      },
+      "feedback": "Học viên hiểu ý chính tốt, cần tăng độ trôi chảy và phát âm âm cuối.",
+      "teachingPlan": "Lộ trình B1-B2: 4 tuần đầu tập trung phản xạ nói, phát âm âm cuối và diễn đạt câu dài. Tuần 1 chẩn đoán lỗi và ôn nền tảng; tuần 2 luyện nghe-nói theo tình huống; tuần 3 tăng đọc hiểu và phản hồi câu hỏi; tuần 4 kiểm tra lại, điều chỉnh mục tiêu và xếp lớp phù hợp.",
+      "createdBy": "acc-admin",
+      "createdAt": "2026-05-22T02:00:00.000Z",
+      "startedAt": "2026-05-22T02:10:00.000Z",
+      "submittedAt": "2026-05-22T02:45:00.000Z",
+      "reviewedBy": "acc-admin",
+      "reviewedAt": "2026-05-22T03:00:00.000Z",
+      "answerAudio": {}
+    }
+  ],
+  "placementTemplates": [
+    {
+      "id": "template-foundation-a1-a2",
+      "title": "Foundation English Placement",
+      "level": "A1-A2",
+      "durationMinutes": 45,
+      "description": "Đánh giá nền tảng nghe, nói, đọc hiểu và phát âm cho học viên mới bắt đầu hoặc mất gốc.",
+      "sections": [
+        {
+          "key": "listening",
+          "title": "Nghe",
+          "prompt": "Học viên đọc tình huống như một đoạn nghe mô phỏng, sau đó chọn đáp án phù hợp.",
+          "questions": [
+            {
+              "id": "l1",
+              "type": "select",
+              "question": "Audio prompt: Anna says she studies English every Tuesday and Thursday evening. When does Anna study English?",
+              "options": [
+                "Monday and Friday",
+                "Tuesday and Thursday evening",
+                "Every morning"
+              ],
+              "answer": "Tuesday and Thursday evening",
+              "points": 10
+            },
+            {
+              "id": "l2",
+              "type": "select",
+              "question": "Audio prompt: The class starts at 7:30 PM and finishes at 8:30 PM. How long is the class?",
+              "options": [
+                "30 minutes",
+                "1 hour",
+                "2 hours"
+              ],
+              "answer": "1 hour",
+              "points": 10
+            }
+          ],
+          "audioDataUrl": "",
+          "audioName": ""
+        },
+        {
+          "key": "speaking",
+          "title": "Nói",
+          "prompt": "Học viên trả lời bằng tiếng Anh. Admin có thể phỏng vấn trực tiếp hoặc yêu cầu học viên ghi câu trả lời.",
+          "questions": [
+            {
+              "id": "s1",
+              "type": "textarea",
+              "question": "Introduce yourself in 4-5 sentences: name, city, job/study, and why you want to learn English.",
+              "points": 10
+            },
+            {
+              "id": "s2",
+              "type": "textarea",
+              "question": "Describe your daily routine using simple present tense.",
+              "points": 10
+            }
+          ],
+          "audioDataUrl": "",
+          "audioName": ""
+        },
+        {
+          "key": "reading",
+          "title": "Đọc hiểu",
+          "prompt": "Read: Minh works in Hanoi. He needs English for emails and short meetings. He can read simple messages but feels nervous when speaking.",
+          "questions": [
+            {
+              "id": "r1",
+              "type": "select",
+              "question": "Why does Minh need English?",
+              "options": [
+                "For emails and meetings",
+                "For cooking",
+                "For travel only"
+              ],
+              "answer": "For emails and meetings",
+              "points": 10
+            },
+            {
+              "id": "r2",
+              "type": "select",
+              "question": "What is difficult for Minh?",
+              "options": [
+                "Speaking",
+                "Reading simple messages",
+                "Writing his name"
+              ],
+              "answer": "Speaking",
+              "points": 10
+            }
+          ],
+          "audioDataUrl": "",
+          "audioName": ""
+        },
+        {
+          "key": "comprehension",
+          "title": "Hiểu và phản hồi",
+          "prompt": "Kiểm tra khả năng hiểu yêu cầu và phản hồi đúng ngữ cảnh.",
+          "questions": [
+            {
+              "id": "c1",
+              "type": "textarea",
+              "question": "A customer asks: 'Can we move the meeting to Friday?' Write a short polite reply.",
+              "points": 10
+            }
+          ],
+          "audioDataUrl": "",
+          "audioName": ""
+        },
+        {
+          "key": "pronunciation",
+          "title": "Phát âm",
+          "prompt": "Admin yêu cầu học viên đọc to các câu sau và ghi nhận lỗi âm cuối, trọng âm, nối âm.",
+          "questions": [
+            {
+              "id": "p1",
+              "type": "textarea",
+              "question": "Read aloud: 'I usually practice English in the evening because I want to speak clearly.' Note any words you find difficult.",
+              "points": 10
+            }
+          ],
+          "audioDataUrl": "",
+          "audioName": ""
+        }
+      ]
+    },
+    {
+      "id": "template-communication-a2-b1",
+      "title": "Communication Placement",
+      "level": "A2-B1",
+      "durationMinutes": 60,
+      "description": "Đánh giá khả năng giao tiếp công việc, phản xạ câu hỏi, đọc hiểu email và phát âm các âm dễ nhầm.",
+      "sections": [
+        {
+          "key": "listening",
+          "title": "Nghe",
+          "prompt": "Học viên đọc đoạn nghe mô phỏng hoặc admin đọc đoạn này trong buổi kiểm tra.",
+          "questions": [
+            {
+              "id": "l1",
+              "type": "select",
+              "question": "Audio prompt: The client wants a short update before noon and a full report by 5 PM. What does the client need first?",
+              "options": [
+                "A full report",
+                "A short update",
+                "A new contract"
+              ],
+              "answer": "A short update",
+              "points": 10
+            },
+            {
+              "id": "l2",
+              "type": "textarea",
+              "question": "Summarize the request in one English sentence.",
+              "points": 10
+            }
+          ],
+          "audioDataUrl": "",
+          "audioName": ""
+        },
+        {
+          "key": "speaking",
+          "title": "Nói",
+          "prompt": "Học viên trả lời bằng tiếng Anh, ưu tiên độ trôi chảy và khả năng triển khai ý.",
+          "questions": [
+            {
+              "id": "s1",
+              "type": "textarea",
+              "question": "Talk about a recent work or study challenge. What happened and how did you solve it?",
+              "points": 10
+            },
+            {
+              "id": "s2",
+              "type": "textarea",
+              "question": "Role-play: Ask a colleague to clarify a task you do not understand.",
+              "points": 10
+            }
+          ],
+          "audioDataUrl": "",
+          "audioName": ""
+        },
+        {
+          "key": "reading",
+          "title": "Đọc hiểu",
+          "prompt": "Read: Thank you for joining the trial class. Based on your speaking goal, we recommend two conversation lessons per week and one pronunciation review every Friday.",
+          "questions": [
+            {
+              "id": "r1",
+              "type": "select",
+              "question": "How many conversation lessons are recommended each week?",
+              "options": [
+                "One",
+                "Two",
+                "Five"
+              ],
+              "answer": "Two",
+              "points": 10
+            },
+            {
+              "id": "r2",
+              "type": "select",
+              "question": "What happens every Friday?",
+              "options": [
+                "Pronunciation review",
+                "Grammar test",
+                "Payment reminder"
+              ],
+              "answer": "Pronunciation review",
+              "points": 10
+            }
+          ],
+          "audioDataUrl": "",
+          "audioName": ""
+        },
+        {
+          "key": "comprehension",
+          "title": "Hiểu và phản hồi",
+          "prompt": "Đánh giá khả năng hiểu ý chính và trả lời có tổ chức.",
+          "questions": [
+            {
+              "id": "c1",
+              "type": "textarea",
+              "question": "Write 3 learning priorities for a student who wants business communication.",
+              "points": 10
+            }
+          ],
+          "audioDataUrl": "",
+          "audioName": ""
+        },
+        {
+          "key": "pronunciation",
+          "title": "Phát âm",
+          "prompt": "Tập trung âm /θ/, /ð/, âm cuối và trọng âm câu.",
+          "questions": [
+            {
+              "id": "p1",
+              "type": "textarea",
+              "question": "Read aloud: 'This Thursday, they will think about three things together.' Note difficult sounds.",
+              "points": 10
+            }
+          ],
+          "audioDataUrl": "",
+          "audioName": ""
+        }
+      ]
+    },
+    {
+      "id": "template-academic-b1-b2",
+      "title": "IELTS / Academic Placement",
+      "level": "B1-B2",
+      "durationMinutes": 75,
+      "description": "Đánh giá học viên có mục tiêu IELTS, du học hoặc phỏng vấn học thuật.",
+      "sections": [
+        {
+          "key": "listening",
+          "title": "Nghe",
+          "prompt": "Admin có thể đọc prompt như phần listening ngắn, học viên ghi ý chính và chi tiết.",
+          "questions": [
+            {
+              "id": "l1",
+              "type": "textarea",
+              "question": "Audio prompt: A student discusses choosing Canada because of program quality, post-graduation work options, and safety. Write the three reasons.",
+              "points": 10
+            },
+            {
+              "id": "l2",
+              "type": "select",
+              "question": "Which reason is related to career after graduation?",
+              "options": [
+                "Program quality",
+                "Post-graduation work options",
+                "Safety"
+              ],
+              "answer": "Post-graduation work options",
+              "points": 10
+            }
+          ],
+          "audioDataUrl": "",
+          "audioName": ""
+        },
+        {
+          "key": "speaking",
+          "title": "Nói",
+          "prompt": "Mô phỏng IELTS Speaking Part 2 và Part 3.",
+          "questions": [
+            {
+              "id": "s1",
+              "type": "textarea",
+              "question": "Describe an English learning goal you want to achieve. Explain why it matters and how you will measure progress.",
+              "points": 10
+            },
+            {
+              "id": "s2",
+              "type": "textarea",
+              "question": "Do you think online learning can be as effective as offline learning? Give reasons and examples.",
+              "points": 10
+            }
+          ],
+          "audioDataUrl": "",
+          "audioName": ""
+        },
+        {
+          "key": "reading",
+          "title": "Đọc hiểu",
+          "prompt": "Read: A structured learning plan should diagnose current ability, define measurable goals, assign weekly practice, and review progress every month.",
+          "questions": [
+            {
+              "id": "r1",
+              "type": "select",
+              "question": "What should happen before defining a learning plan?",
+              "options": [
+                "Diagnose current ability",
+                "Review progress every year",
+                "Skip weekly practice"
+              ],
+              "answer": "Diagnose current ability",
+              "points": 10
+            },
+            {
+              "id": "r2",
+              "type": "textarea",
+              "question": "Paraphrase the sentence: 'review progress every month'.",
+              "points": 10
+            }
+          ],
+          "audioDataUrl": "",
+          "audioName": ""
+        },
+        {
+          "key": "comprehension",
+          "title": "Hiểu và phản biện",
+          "prompt": "Kiểm tra khả năng tổ chức ý, lập luận và liên kết câu.",
+          "questions": [
+            {
+              "id": "c1",
+              "type": "textarea",
+              "question": "Write a short paragraph recommending a 4-week study plan for an IELTS learner.",
+              "points": 10
+            }
+          ],
+          "audioDataUrl": "",
+          "audioName": ""
+        },
+        {
+          "key": "pronunciation",
+          "title": "Phát âm",
+          "prompt": "Tập trung word stress, sentence stress và clarity khi trả lời dài.",
+          "questions": [
+            {
+              "id": "p1",
+              "type": "textarea",
+              "question": "Read aloud: 'A measurable objective helps learners maintain motivation and evaluate improvement.' Note difficult words.",
+              "points": 10
+            }
+          ],
+          "audioDataUrl": "",
+          "audioName": ""
+        }
+      ]
+    }
+  ]
+}

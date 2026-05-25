@@ -1,0 +1,8 @@
+[{
+      "relation": ["delegate_permission/common.handle_all_urls"],
+      "target": {
+        "namespace": "android_app",
+        "package_name": "com.aseanvietnam.englishhub",
+        "sha256_cert_fingerprints": ["AD:D9:7F:5F:6D:03:CE:F3:72:79:33:64:C5:DA:9C:5A:65:2E:13:39:38:56:62:C0:F6:29:03:D7:C9:C8:15:3E"]
+      }
+    }]

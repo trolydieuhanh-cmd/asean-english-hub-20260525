@@ -1,0 +1,19 @@
+[Unit]
+Description=Asean Holding English Hub
+After=network.target
+
+[Service]
+Type=simple
+WorkingDirectory=/docker/asean-english-hub
+Environment=NODE_ENV=production
+Environment=HOST=0.0.0.0
+Environment=PORT=4173
+Environment=DATA_FILE=data/asean-hub.json
+ExecStart=/usr/bin/node /docker/asean-english-hub/server.js
+Restart=always
+RestartSec=5
+User=www-data
+Group=www-data
+
+[Install]
+WantedBy=multi-user.target

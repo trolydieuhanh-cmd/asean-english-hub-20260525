@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-labelledby="title desc">
+  <title id="title">Asean Holding Logo</title>
+  <desc id="desc">Custom Asean Holding English Hub logo with AH monogram and global learning mark.</desc>
+  <rect width="512" height="512" rx="112" fill="#0f766e"/>
+  <circle cx="256" cy="256" r="172" fill="#fffaf1"/>
+  <circle cx="256" cy="256" r="132" fill="#0f766e"/>
+  <path d="M157 315c25-76 83-125 176-148-13 90-61 149-146 178l-30-30Z" fill="#f8c66a"/>
+  <path d="M190 315c54-21 93-60 119-118-55 25-94 64-119 118Z" fill="#fffaf1"/>
+  <path d="M150 360h212c11 0 20 9 20 20v13H130v-13c0-11 9-20 20-20Z" fill="#fffaf1"/>
+  <path d="M160 394h192v22H160z" fill="#f8c66a"/>
+  <path d="M151 252h35l18-49h104l18 49h36l-82-178h-48l-81 178Zm67-80 38-86 37 86h-75Z" fill="#fffaf1"/>
+  <path d="M190 295h33v-61h66v61h33V151h-33v54h-66v-54h-33v144Z" fill="#fffaf1" opacity=".94"/>
+  <path d="M256 45c116 0 211 94 211 211s-95 211-211 211S45 372 45 256 140 45 256 45Zm0 23C153 68 68 153 68 256s85 188 188 188 188-85 188-188S359 68 256 68Z" fill="#f8c66a"/>
+</svg>
