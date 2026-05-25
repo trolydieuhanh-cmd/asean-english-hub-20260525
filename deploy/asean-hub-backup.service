@@ -1,0 +1,11 @@
+[Unit]
+Description=Asean English Hub encrypted backup
+Wants=asean-english-hub.service
+
+[Service]
+Type=oneshot
+EnvironmentFile=-/docker/asean-english-hub/.env
+WorkingDirectory=/docker/asean-english-hub
+ExecStart=/bin/sh /docker/asean-english-hub/scripts/backup-encrypted.sh
+User=root
+Group=root

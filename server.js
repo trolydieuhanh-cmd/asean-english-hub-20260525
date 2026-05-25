@@ -12,6 +12,7 @@ loadEnvFile(path.join(ROOT, ".env"));
 const PORT = Number(process.env.PORT || 4173);
 const HOST = process.env.HOST || "0.0.0.0";
 const DATA_FILE = path.resolve(ROOT, process.env.DATA_FILE || path.join("data", "asean-hub.json"));
+const AUDIT_LOG_FILE = path.resolve(ROOT, process.env.AUDIT_LOG_FILE || path.join("data", "audit-log.jsonl"));
 const MAX_BODY_SIZE = 25 * 1024 * 1024;
 const SESSION_COOKIE = "asean_session";
 const CSRF_HEADER = "x-csrf-token";
@@ -21,6 +22,7 @@ const APP_SECRET = process.env.APP_SECRET || "dev-only-change-this-secret";
 const IS_PRODUCTION = process.env.NODE_ENV === "production";
 const LOGIN_RATE_LIMIT_WINDOW_MS = Number(process.env.LOGIN_RATE_LIMIT_WINDOW_MS || 15 * 60 * 1000);
 const LOGIN_RATE_LIMIT_MAX = Number(process.env.LOGIN_RATE_LIMIT_MAX || 10);
+const AUDIT_LOG_MAX_READ = Number(process.env.AUDIT_LOG_MAX_READ || 500);
 const SYSTEM_EMAIL_FROM = process.env.SYSTEM_EMAIL_FROM || "Asean Hitech System <no-reply@asean-vietnam.com>";
 const PUBLIC_APP_URL = process.env.PUBLIC_APP_URL || "https://asean-vietnam.com";
 const SENDMAIL_PATH = process.env.SENDMAIL_PATH || "/usr/sbin/sendmail";
@@ -34,6 +36,23 @@ const GOOGLE_OAUTH_SCOPES = ["openid", "email", GOOGLE_MEET_SCOPE];
 const sessions = new Map();
 const googleOAuthStates = new Map();
 const loginAttempts = new Map();
+
+const ROLE_PERMISSIONS = {
+  admin: new Set([
+    "state:read",
+    "state:write",
+    "account:manage",
+    "lesson:manage",
+    "finance:manage",
+    "placement:manage",
+    "notification:manage",
+    "video:manage",
+    "settings:manage",
+    "audit:read"
+  ]),
+  teacher: new Set(["state:read", "profile:read", "lesson:read", "notification:read", "video:join"]),
+  student: new Set(["state:read", "profile:read", "lesson:read", "notification:read", "video:join", "placement:submit"])
+};
 
 const contentTypes = {
   ".html": "text/html; charset=utf-8",
@@ -95,6 +114,10 @@ const server = http.createServer(async (request, response) => {
       return sendJson(response, 200, { ok: true, account: sanitizeAccount(account) });
     }
 
+    if (requestUrl.pathname === "/api/audit" && request.method === "GET") {
+      return await handleAuditLog(request, response, requestUrl);
+    }
+
     if (requestUrl.pathname === "/api/google/status" && request.method === "GET") {
       return await handleGoogleStatus(request, response);
     }
@@ -109,6 +132,7 @@ const server = http.createServer(async (request, response) => {
 
     if (requestUrl.pathname === "/api/state" && request.method === "GET") {
       const { state, account } = await requireAuth(request);
+      requirePermission(account, "state:read");
       return sendJson(response, 200, sanitizeStateForAccount(state, account), { "Cache-Control": "no-store" });
     }
 
@@ -122,6 +146,7 @@ const server = http.createServer(async (request, response) => {
         if (GOOGLE_MEET_API_ENABLED) await attachGoogleMeetLinks(nextState, state);
       }
       await saveState(nextState);
+      await recordAuditEvent(request, account, "state.update", summarizeStateChanges(state, nextState, account));
       sendAccountEmails(emailJobs).catch((error) => {
         console.error("Could not send account notification email:", error.message);
       });
@@ -154,18 +179,21 @@ async function handleLogin(request, response) {
   const { email, password } = JSON.parse(await readBody(request));
   const rateKey = loginRateKey(request, email);
   if (isLoginRateLimited(rateKey)) {
+    await recordAuditEvent(request, null, "auth.login_rate_limited", { email: auditEmail(email) });
     return sendJson(response, 429, { error: "Too many login attempts. Please try again later." });
   }
   const state = await loadState();
   const account = state.accounts.find((item) => String(item.email || "").toLowerCase() === String(email || "").trim().toLowerCase());
   if (!account || account.status !== "active" || !verifyPassword(String(password || ""), account)) {
     recordFailedLogin(rateKey);
+    await recordAuditEvent(request, null, "auth.login_failed", { email: auditEmail(email), reason: "invalid_credentials" });
     return sendJson(response, 401, { error: "Invalid email or password" });
   }
   clearLoginRate(rateKey);
 
   markAccountOnline(account);
   await saveState(state);
+  await recordAuditEvent(request, account, "auth.login_success", { role: account.role });
 
   const sessionId = crypto.randomBytes(32).toString("hex");
   const csrfToken = crypto.randomBytes(32).toString("hex");
@@ -202,6 +230,7 @@ async function handleLogout(request, response) {
       if (account) {
         markAccountOffline(account);
         await saveState(state);
+        await recordAuditEvent(request, account, "auth.logout", { role: account.role });
       }
     }
   }
@@ -234,7 +263,16 @@ async function handleChangePassword(request, response) {
 
   setAccountPassword(account, next);
   await saveState(state);
+  await recordAuditEvent(request, account, "auth.password_changed", { role: account.role });
   return sendJson(response, 200, { ok: true, account: sanitizeAccount(account) });
+}
+
+async function handleAuditLog(request, response, requestUrl) {
+  const { account } = await requireAuth(request);
+  requirePermission(account, "audit:read");
+  const limit = Math.max(1, Math.min(Number(requestUrl.searchParams.get("limit") || 100), AUDIT_LOG_MAX_READ));
+  const events = await readAuditEvents(limit);
+  return sendJson(response, 200, { ok: true, events }, { "Cache-Control": "no-store" });
 }
 
 async function handleGoogleStatus(request, response) {
@@ -335,12 +373,20 @@ async function requireAuth(request) {
 
 async function requireAdmin(request) {
   const auth = await requireAuth(request);
-  if (auth.account.role !== "admin") {
-    const error = new Error("Admin access required");
+  requirePermission(auth.account, "settings:manage");
+  return auth;
+}
+
+function requirePermission(account, permission) {
+  if (!hasPermission(account, permission)) {
+    const error = new Error("Permission denied");
     error.statusCode = 403;
     throw error;
   }
-  return auth;
+}
+
+function hasPermission(account, permission) {
+  return Boolean(account?.role && ROLE_PERMISSIONS[account.role]?.has(permission));
 }
 
 async function loadState() {
@@ -563,6 +609,7 @@ function prepareAdminState(incoming, previous, emailJobs = []) {
 }
 
 function mergeLimitedState(current, incoming, account) {
+  requirePermission(account, account.role === "student" ? "placement:submit" : "profile:read");
   const next = clone(current);
   const incomingAccount = (incoming.accounts || []).find((item) => item.id === account.id);
   const currentAccount = (next.accounts || []).find((item) => item.id === account.id);
@@ -591,6 +638,99 @@ function mergeLimitedState(current, incoming, account) {
   }
 
   return next;
+}
+
+async function recordAuditEvent(request, account, action, details = {}) {
+  try {
+    await appendAuditEvent(request, account, action, details);
+  } catch (error) {
+    console.error("Could not write audit event:", error.message);
+  }
+}
+
+async function appendAuditEvent(request, account, action, details = {}) {
+  const event = {
+    id: crypto.randomBytes(12).toString("hex"),
+    at: new Date().toISOString(),
+    action,
+    actor: account
+      ? {
+          id: account.id || "",
+          role: account.role || "",
+          email: auditEmail(account.email),
+          name: account.name || ""
+        }
+      : null,
+    ip: clientIp(request),
+    userAgent: String(request.headers["user-agent"] || "").slice(0, 240),
+    details: sanitizeAuditDetails(details)
+  };
+  await fs.promises.mkdir(path.dirname(AUDIT_LOG_FILE), { recursive: true });
+  await fs.promises.appendFile(AUDIT_LOG_FILE, `${JSON.stringify(event)}\n`, { encoding: "utf8", mode: 0o600 });
+}
+
+async function readAuditEvents(limit) {
+  try {
+    const raw = await fs.promises.readFile(AUDIT_LOG_FILE, "utf8");
+    return raw
+      .split(/\r?\n/)
+      .filter(Boolean)
+      .slice(-limit)
+      .map((line) => {
+        try {
+          return JSON.parse(line);
+        } catch (error) {
+          return null;
+        }
+      })
+      .filter(Boolean)
+      .reverse();
+  } catch (error) {
+    if (error.code === "ENOENT") return [];
+    throw error;
+  }
+}
+
+function summarizeStateChanges(previous, next, account) {
+  const summary = {
+    role: account.role,
+    changedCollections: []
+  };
+  for (const key of ["accounts", "teachers", "students", "lessons", "notifications", "placementTemplates", "placementTests"]) {
+    const beforeItems = Array.isArray(previous[key]) ? previous[key] : [];
+    const afterItems = Array.isArray(next[key]) ? next[key] : [];
+    const beforeIds = new Set(beforeItems.map((item) => item.id).filter(Boolean));
+    const afterIds = new Set(afterItems.map((item) => item.id).filter(Boolean));
+    const created = [...afterIds].filter((id) => !beforeIds.has(id)).length;
+    const deleted = [...beforeIds].filter((id) => !afterIds.has(id)).length;
+    const changed = afterItems.filter((item) => beforeIds.has(item.id) && JSON.stringify(beforeItems.find((oldItem) => oldItem.id === item.id)) !== JSON.stringify(item)).length;
+    if (created || deleted || changed || beforeItems.length !== afterItems.length) {
+      summary.changedCollections.push({ key, created, changed, deleted, total: afterItems.length });
+    }
+  }
+  if (previous.settings && next.settings && JSON.stringify(previous.settings) !== JSON.stringify(next.settings)) {
+    summary.changedCollections.push({ key: "settings", changed: 1, created: 0, deleted: 0, total: 1 });
+  }
+  return summary;
+}
+
+function sanitizeAuditDetails(value) {
+  if (Array.isArray(value)) return value.map(sanitizeAuditDetails);
+  if (!value || typeof value !== "object") return value;
+  const safe = {};
+  for (const [key, item] of Object.entries(value)) {
+    if (/password|secret|token|csrf|hash|salt/i.test(key)) continue;
+    safe[key] = sanitizeAuditDetails(item);
+  }
+  return safe;
+}
+
+function auditEmail(email) {
+  const value = String(email || "").trim().toLowerCase();
+  if (!value.includes("@")) return value;
+  const [name, domain] = value.split("@");
+  const visible = name.slice(0, Math.min(2, name.length));
+  return `${visible}${"*".repeat(Math.max(2, name.length - visible.length))}@${domain}`;
 }
 
 function sanitizeStateForAccount(state, account) {

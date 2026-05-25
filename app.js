@@ -691,6 +691,8 @@ let editingTemplateId = null;
 let editingLessonId = null;
 let selectedVideoLessonId = null;
 let recordingState = null;
+let auditLog = [];
+let auditLogLoaded = false;
 let serverOnline = false;
 let toastTimer = null;
 let syncTimer = null;
@@ -1473,6 +1475,7 @@ function renderView() {
     if (activeView === "placement") return renderPlacementTests();
     if (activeView === "notifications") return renderNotifications();
     if (activeView === "video") return renderVideoCenter();
+    if (activeView === "audit") return renderAuditAdmin();
     if (activeView === "settings") return renderSettings();
   }
 
@@ -2619,6 +2622,102 @@ function renderLiveCallCard(lesson, isSelected, isAdmin) {
   `;
 }
 
+function renderAuditAdmin() {
+  if (!auditLogLoaded && serverOnline) {
+    loadAuditLog();
+  }
+  return `
+    <section class="panel">
+      <div class="panel-header">
+        <div class="panel-title">
+          <h2>Nhật ký bảo mật</h2>
+          <p>Theo dõi đăng nhập, đổi mật khẩu, cập nhật dữ liệu và các thao tác nhạy cảm trên hệ thống.</p>
+        </div>
+        <button class="btn btn-secondary" type="button" data-action="refresh-audit">${icon("refresh-cw")} Làm mới</button>
+      </div>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>Thời gian</th>
+              <th>Hành động</th>
+              <th>Tài khoản</th>
+              <th>IP</th>
+              <th>Chi tiết</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${
+              auditLog.length
+                ? auditLog.map(renderAuditRow).join("")
+                : `<tr><td colspan="5" class="empty-cell">${auditLogLoaded ? "Chưa có nhật ký bảo mật." : "Đang tải nhật ký..."}</td></tr>`
+            }
+          </tbody>
+        </table>
+      </div>
+    </section>
+  `;
+}
+
+function renderAuditRow(event) {
+  const actor = event.actor
+    ? `${safe(event.actor.name || "N/A")}<div class="meta-subtitle">${safe(event.actor.role || "")} - ${safe(event.actor.email || "")}</div>`
+    : "Hệ thống";
+  const details = auditDetailsText(event.details);
+  return `
+    <tr>
+      <td>${safe(formatDateTime(event.at))}</td>
+      <td><span class="status-pill">${safe(auditActionLabel(event.action))}</span></td>
+      <td>${actor}</td>
+      <td>${safe(event.ip || "N/A")}</td>
+      <td>${safe(details || "Không có chi tiết")}</td>
+    </tr>
+  `;
+}
+
+function auditActionLabel(action) {
+  return {
+    "auth.login_success": "Đăng nhập",
+    "auth.login_failed": "Sai đăng nhập",
+    "auth.login_rate_limited": "Chặn đăng nhập",
+    "auth.logout": "Đăng xuất",
+    "auth.password_changed": "Đổi mật khẩu",
+    "state.update": "Cập nhật dữ liệu"
+  }[action] || action || "Sự kiện";
+}
+
+function auditDetailsText(details) {
+  if (!details || typeof details !== "object") return "";
+  if (Array.isArray(details.changedCollections)) {
+    return details.changedCollections
+      .map((item) => `${item.key}: +${item.created || 0}, sửa ${item.changed || 0}, xóa ${item.deleted || 0}`)
+      .join("; ");
+  }
+  return Object.entries(details)
+    .map(([key, value]) => `${key}: ${Array.isArray(value) || typeof value === "object" ? JSON.stringify(value) : value}`)
+    .join("; ");
+}
+
+async function loadAuditLog() {
+  if (!serverOnline || currentAccount()?.role !== "admin") return;
+  try {
+    const response = await fetch("/api/audit?limit=100", {
+      cache: "no-store",
+      credentials: "include",
+      headers: authHeaders()
+    });
+    if (!response.ok) throw new Error("Cannot load audit log");
+    const payload = await response.json();
+    auditLog = Array.isArray(payload.events) ? payload.events : [];
+    auditLogLoaded = true;
+    if (activeView === "audit") render();
+  } catch (error) {
+    auditLogLoaded = true;
+    showToast("Không tải được nhật ký bảo mật.");
+    if (activeView === "audit") render();
+  }
+}
+
 function renderSettings() {
   return `
     <section class="grid grid-2">
@@ -3073,6 +3172,17 @@ function handleClick(event) {
 
   if (action === "nav") {
     activeView = target.dataset.view || defaultView(currentAccount()?.role);
+    if (activeView === "audit") {
+      auditLogLoaded = false;
+      loadAuditLog();
+    }
+    render();
+    return;
+  }
+
+  if (action === "refresh-audit") {
+    auditLogLoaded = false;
+    loadAuditLog();
     render();
     return;
   }
@@ -4172,6 +4282,7 @@ function navItems(role) {
       { id: "placement", label: "Test đầu vào", icon: "clipboard-check" },
       common.notifications,
       common.video,
+      { id: "audit", label: "Nhật ký", icon: "shield-check" },
       { id: "settings", label: "Cài đặt", icon: "settings" }
     ];
   }
@@ -4212,6 +4323,7 @@ function viewTitle(view, role) {
     placement: "Test đầu vào",
     notifications: "Thông báo nhắc nhở",
     video: "Trung tâm video call",
+    audit: "Nhật ký bảo mật",
     settings: "Cài đặt hệ thống",
     profile: "Hồ sơ"
   };
@@ -4935,5 +5047,5 @@ function safe(value) {
 
 function registerServiceWorker() {
   if (!("serviceWorker" in navigator) || !canUseServerApi()) return;
-  navigator.serviceWorker.register("service-worker.js?v=20260525-security-hardening").catch(() => {});
+  navigator.serviceWorker.register("service-worker.js?v=20260525-audit-backup").catch(() => {});
 }

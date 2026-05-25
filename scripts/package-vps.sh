@@ -38,6 +38,7 @@ for item in \
   Dockerfile \
   docker-compose.yml \
   ecosystem.config.cjs \
+  docs \
   deploy \
   scripts
 do

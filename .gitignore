@@ -6,4 +6,8 @@ dist/
 *.tar.gz
 *.zip
 data/*.json
+data/*.jsonl
+data/*.sqlite
+data/*.sqlite-*
+data/*.passphrase
 !data/asean-hub.example.json
