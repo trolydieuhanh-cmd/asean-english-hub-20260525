@@ -9,6 +9,7 @@
     "check": "node --check app.js && node --check server.js",
     "backup:encrypted": "sh scripts/backup-encrypted.sh",
     "export:sqlite": "node scripts/export-to-sqlite.js",
+    "test:load": "node scripts/load-test-realtime.js",
     "pack:vps": "sh scripts/package-vps.sh"
   },
   "engines": {

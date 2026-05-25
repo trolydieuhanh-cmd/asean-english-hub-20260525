@@ -36,6 +36,7 @@ const GOOGLE_OAUTH_SCOPES = ["openid", "email", GOOGLE_MEET_SCOPE];
 const sessions = new Map();
 const googleOAuthStates = new Map();
 const loginAttempts = new Map();
+let stateWriteQueue = Promise.resolve();
 
 const ROLE_PERMISSIONS = {
   admin: new Set([
@@ -137,20 +138,26 @@ const server = http.createServer(async (request, response) => {
     }
 
     if (requestUrl.pathname === "/api/state" && request.method === "POST") {
-      const { state, account } = await requireAuth(request);
+      const { account } = await requireAuth(request);
       requireCsrf(request);
       const parsed = JSON.parse(await readBody(request));
       const emailJobs = [];
-      const nextState = account.role === "admin" ? prepareAdminState(parsed, state, emailJobs) : mergeLimitedState(state, parsed, account);
-      if (account.role === "admin") {
-        if (GOOGLE_MEET_API_ENABLED) await attachGoogleMeetLinks(nextState, state);
-      }
-      await saveState(nextState);
-      await recordAuditEvent(request, account, "state.update", summarizeStateChanges(state, nextState, account));
+      const { previousState, nextState, latestAccount } = await updateState(async (latestState) => {
+        const latestAccount = latestState.accounts.find((item) => item.id === account.id && item.status === "active");
+        if (!latestAccount) {
+          const error = new Error("Unauthorized");
+          error.statusCode = 401;
+          throw error;
+        }
+        const nextState = latestAccount.role === "admin" ? prepareAdminState(parsed, latestState, emailJobs) : mergeLimitedState(latestState, parsed, latestAccount);
+        if (latestAccount.role === "admin" && GOOGLE_MEET_API_ENABLED) await attachGoogleMeetLinks(nextState, latestState);
+        return { nextState, latestAccount };
+      });
+      await recordAuditEvent(request, latestAccount, "state.update", summarizeStateChanges(previousState, nextState, latestAccount));
       sendAccountEmails(emailJobs).catch((error) => {
         console.error("Could not send account notification email:", error.message);
       });
-      return sendJson(response, 200, { ok: true, state: sanitizeStateForAccount(nextState, account) });
+      return sendJson(response, 200, { ok: true, state: sanitizeStateForAccount(nextState, latestAccount) });
     }
 
     if (request.method !== "GET" && request.method !== "HEAD") {
@@ -404,6 +411,22 @@ async function saveState(state) {
   await fs.promises.rename(tempFile, DATA_FILE);
 }
 
+async function updateState(mutator) {
+  const run = stateWriteQueue.then(async () => {
+    const previousState = await loadState();
+    const result = await mutator(previousState);
+    const nextState = result?.nextState || result;
+    await saveState(nextState);
+    return {
+      ...result,
+      previousState,
+      nextState
+    };
+  });
+  stateWriteQueue = run.catch(() => {});
+  return run;
+}
+
 async function attachGoogleMeetLinks(nextState, previousState) {
   if (!googleMeetConfigured() || !(await googleMeetConnected())) return;
 
@@ -637,6 +660,34 @@ function mergeLimitedState(current, incoming, account) {
     });
   }
 
+  if (account.role === "teacher") {
+    const teacherId = account.profileId;
+    const allowedLessons = new Map((incoming.lessons || []).filter((lesson) => lesson.teacherId === teacherId).map((lesson) => [lesson.id, lesson]));
+    next.lessons = (next.lessons || []).map((lesson) => {
+      const incomingLesson = allowedLessons.get(lesson.id);
+      if (!incomingLesson || lesson.teacherId !== teacherId || lesson.status === "cancelled") return lesson;
+      const activeIncoming = Boolean(incomingLesson.adminStarted);
+      return {
+        ...lesson,
+        adminStarted: activeIncoming,
+        callStartedBy: activeIncoming ? account.id : null,
+        callStartedAt: activeIncoming ? lesson.callStartedAt || incomingLesson.callStartedAt || new Date().toISOString() : null
+      };
+    });
+    const activeLessonIds = uniqueIds([
+      ...((next.callState?.activeLessonIds || []).filter((id) => {
+        const lesson = (next.lessons || []).find((item) => item.id === id);
+        return lesson && (lesson.teacherId !== teacherId || lesson.adminStarted);
+      })),
+      ...next.lessons.filter((lesson) => lesson.teacherId === teacherId && lesson.adminStarted && lesson.status !== "cancelled").map((lesson) => lesson.id)
+    ]);
+    next.callState = next.callState || {};
+    next.callState.activeLessonIds = activeLessonIds;
+    next.callState.activeLessonId = activeLessonIds[0] || null;
+    next.callState.startedBy = next.callState.activeLessonId ? account.id : null;
+    next.callState.startedAt = next.callState.activeLessonId ? new Date().toISOString() : null;
+  }
+
   return next;
 }
 
@@ -731,6 +782,10 @@ function auditEmail(email) {
   const [name, domain] = value.split("@");
   const visible = name.slice(0, Math.min(2, name.length));
   return `${visible}${"*".repeat(Math.max(2, name.length - visible.length))}@${domain}`;
+}
+
+function uniqueIds(ids) {
+  return [...new Set((ids || []).filter(Boolean))];
 }
 
 function sanitizeStateForAccount(state, account) {

@@ -107,8 +107,8 @@ const EN_TRANSLATIONS = {
   "Ngày học": "Lesson date",
   "Giờ bắt đầu": "Start time",
   "Số giờ": "Hours",
-  "Lương GV/giờ": "Teacher pay/hour",
-  "Học phí/giờ": "Tuition/hour",
+  "Tiền giáo viên/buổi": "Teacher pay/session",
+  "Học phí học viên/buổi": "Student tuition/session",
   "Link Google Meet": "Google Meet link",
   "Không bắt buộc. Admin có thể tạo link trên Google Meet rồi dán vào đây để hệ thống không dùng API.": "Optional. Admin can create a link on Google Meet and paste it here so the system does not use an API.",
   "Link Google Meet phải có dạng https://meet.google.com/...": "Google Meet link must look like https://meet.google.com/...",
@@ -163,7 +163,7 @@ const EN_TRANSLATIONS = {
   "Tài khoản giáo viên chưa gắn hồ sơ.": "This teacher account is not linked to a profile.",
   "Tài khoản học viên chưa gắn hồ sơ.": "This student account is not linked to a profile.",
   "Lịch dạy sắp tới": "Upcoming teaching schedule",
-  "Giáo viên chỉ có thể vào phòng khi admin đã mở video call.": "Teachers can only enter once admin has opened the video call.",
+  "Giáo viên có thể mở lớp khi đến giờ học theo lịch admin đã tạo.": "Teachers can open the class when it is time for a scheduled lesson created by admin.",
   "Học viên phụ trách": "Assigned students",
   "Số buổi, số giờ và tiền tạm tính theo từng học viên.": "Sessions, hours and estimated pay by student.",
   "Thời khóa biểu": "Timetable",
@@ -174,9 +174,9 @@ const EN_TRANSLATIONS = {
   "Lịch dạy": "Teaching schedule",
   "Theo dõi thời khóa biểu, số giờ và trạng thái lớp.": "Track timetable, hours and class status.",
   "Chi tiết tiền dạy": "Pay details",
-  "Mỗi buổi học có đơn giá giáo viên riêng để admin linh hoạt điều chỉnh.": "Each lesson has its own teacher rate for flexible admin adjustments.",
+  "Mỗi buổi học có số tiền giáo viên riêng do admin nhập.": "Each lesson has its own teacher payment entered by admin.",
   "Chi tiết học phí": "Tuition details",
-  "Học phí được tính theo số giờ học và đơn giá từng buổi.": "Tuition is calculated from lesson hours and each lesson rate.",
+  "Học phí được tính theo số tiền từng buổi do admin nhập.": "Tuition is calculated from the per-session amount entered by admin.",
   "Tính năng test đầu vào chỉ dành cho admin và học viên.": "Placement tests are only available to admin and students.",
   "Tạo test đầu vào": "Create placement test",
   "Chọn học viên và mẫu có sẵn, hệ thống sẽ lưu bài test vào tài khoản admin và học viên.": "Choose a student and template; the test will be saved for both admin and student.",
@@ -362,7 +362,7 @@ const EN_TRANSLATIONS = {
   "Không thể nộp bài test này.": "Cannot submit this test.",
   "Bài test chưa có đáp án để đánh giá.": "This test has no answers to evaluate.",
   "Vui lòng nhập tên, mô tả và ít nhất một câu hỏi cho mẫu test.": "Please enter a title, description and at least one question for the template.",
-  "Chỉ admin có quyền bắt đầu video call.": "Only admin can start a video call.",
+  "Chỉ admin hoặc giáo viên của buổi học có quyền bắt đầu video call.": "Only admin or the assigned teacher can start this video call.",
   "Không thể mở phòng cho buổi học này.": "Cannot open a room for this lesson.",
   "Chỉ admin có quyền kết thúc video call.": "Only admin can end a video call.",
   "Không tìm thấy lớp đang mở.": "No open class found.",
@@ -380,7 +380,7 @@ const EN_TRANSLATIONS = {
   "Đã tạo mẫu test mới.": "New test template created.",
   "Đã gửi thông báo.": "Notification sent.",
   "Đã lưu cấu hình.": "Settings saved.",
-  "Admin đã mở phòng video cho lớp học.": "Admin opened the video room for the class.",
+  "Đã mở phòng video cho lớp học.": "Video room opened for the class.",
   "Đã kết thúc phòng video của lớp này.": "The video room for this class has ended.",
   "Đã cập nhật trạng thái buổi học.": "Lesson status updated.",
   "Đã xóa buổi học.": "Lesson deleted.",
@@ -1540,7 +1540,7 @@ function renderAdminDashboard() {
         </div>
         <div class="notice" style="margin-top: 14px;">
           <h3>Quy tắc video call</h3>
-          <p>Giáo viên và học viên chỉ vào được phòng khi admin mở lớp từ trung tâm video.</p>
+          <p>Admin hoặc giáo viên phụ trách có thể mở lớp từ lịch đã được admin tạo.</p>
         </div>
       </div>
     </section>
@@ -1573,13 +1573,13 @@ function renderAdminSchedule() {
         <div class="field">
           <label for="lesson-teacher">Giáo viên</label>
           <select class="select" id="lesson-teacher" name="teacherId" required>
-            ${state.teachers.map((teacher) => `<option value="${safe(teacher.id)}" ${editingLesson?.teacherId === teacher.id ? "selected" : ""}>${safe(teacher.name)} - ${money(teacher.ratePerHour)}/h</option>`).join("")}
+            ${state.teachers.map((teacher) => `<option value="${safe(teacher.id)}" ${editingLesson?.teacherId === teacher.id ? "selected" : ""}>${safe(teacher.name)}</option>`).join("")}
           </select>
         </div>
         <div class="field">
           <label for="lesson-student">Học viên</label>
           <select class="select" id="lesson-student" name="studentId" required>
-            ${state.students.map((student) => `<option value="${safe(student.id)}" ${editingLesson?.studentId === student.id ? "selected" : ""}>${safe(student.name)} - ${money(student.studentRatePerHour)}/h</option>`).join("")}
+            ${state.students.map((student) => `<option value="${safe(student.id)}" ${editingLesson?.studentId === student.id ? "selected" : ""}>${safe(student.name)}</option>`).join("")}
           </select>
         </div>
         <div class="field">
@@ -1587,12 +1587,12 @@ function renderAdminSchedule() {
           <input class="input" id="lesson-duration" name="durationHours" type="number" min="0.25" step="0.25" required value="${safe(String(editingLesson?.durationHours || 1))}" />
         </div>
         <div class="field">
-          <label for="teacher-rate">Lương GV/giờ</label>
-          <input class="input" id="teacher-rate" name="teacherRatePerHour" type="number" min="0" step="0.5" value="${safe(editingLesson?.teacherRatePerHour || "")}" placeholder="${safe(String(state.settings.defaultTeacherRate))}" />
+          <label for="teacher-amount">Tiền giáo viên/buổi</label>
+          <input class="input" id="teacher-amount" name="teacherLessonAmount" type="number" min="0" step="0.5" required value="${editingLesson ? safe(String(lessonTeacherAmount(editingLesson))) : ""}" placeholder="${safe(String(state.settings.defaultTeacherRate))}" />
         </div>
         <div class="field">
-          <label for="student-rate">Học phí/giờ</label>
-          <input class="input" id="student-rate" name="studentRatePerHour" type="number" min="0" step="0.5" value="${safe(editingLesson?.studentRatePerHour || "")}" placeholder="${safe(String(state.settings.defaultStudentRate))}" />
+          <label for="student-amount">Học phí học viên/buổi</label>
+          <input class="input" id="student-amount" name="studentLessonAmount" type="number" min="0" step="0.5" required value="${editingLesson ? safe(String(lessonStudentAmount(editingLesson))) : ""}" placeholder="${safe(String(state.settings.defaultStudentRate))}" />
         </div>
         <div class="field full">
           <label for="lesson-meet-url">Link Google Meet</label>
@@ -1849,7 +1849,7 @@ function renderFinanceAdmin() {
   return `
     <section class="grid grid-4">
       ${metric("Phải trả GV", money(payable), "Tạm tính theo lịch chưa hủy", "wallet")}
-      ${metric("Phải thu HV", money(receivable), "Theo đơn giá học viên", "receipt")}
+      ${metric("Phải thu HV", money(receivable), "Theo tiền từng buổi", "receipt")}
       ${metric("Số giờ học", formatNumber(sum(billable.map((lesson) => lesson.durationHours))), "Tổng giờ hợp lệ", "clock-3")}
       ${metric("Biên lợi nhuận", money(receivable - payable), "Trước chi phí vận hành", "chart-no-axes-combined")}
     </section>
@@ -1857,7 +1857,7 @@ function renderFinanceAdmin() {
       <div class="panel-header">
         <div class="panel-title">
           <h2>Bảng lương giáo viên</h2>
-          <p>Gộp theo giáo viên: số buổi, số giờ dạy, số tiền tạm tính.</p>
+          <p>Gộp theo giáo viên: số buổi, số giờ dạy, số tiền theo từng buổi.</p>
         </div>
         <div class="button-row">
           <button class="btn btn-primary" type="button" data-action="export-finance-excel">${icon("file-spreadsheet")} Xuất Excel</button>
@@ -1870,7 +1870,7 @@ function renderFinanceAdmin() {
       <div class="panel-header">
         <div class="panel-title">
           <h2>Công nợ học viên</h2>
-          <p>Gộp theo học viên: lịch học, số giờ và số tiền cần thu.</p>
+          <p>Gộp theo học viên: lịch học, số giờ và số tiền theo từng buổi.</p>
         </div>
       </div>
       ${renderStudentReceivableTable()}
@@ -1898,7 +1898,7 @@ function renderTeacherDashboard() {
         <div class="panel-header">
           <div class="panel-title">
             <h2>Lịch dạy sắp tới</h2>
-            <p>Giáo viên chỉ có thể vào phòng khi admin đã mở video call.</p>
+            <p>Giáo viên có thể mở lớp khi đến giờ học theo lịch admin đã tạo.</p>
           </div>
         </div>
         ${renderTimeline(upcoming, "Hiện chưa có lịch dạy sắp tới.")}
@@ -1931,7 +1931,7 @@ function renderStudentDashboard() {
       ${metric("Buổi đã học", completed.length, "Các lớp đã hoàn thành", "check-circle")}
       ${metric("Giờ đã học", formatNumber(sum(completed.map((lesson) => lesson.durationHours))), "Tổng thời lượng", "clock-3")}
       ${metric("Lịch sắp tới", upcoming.length, "Các lớp chưa hủy", "calendar")}
-      ${metric("Học phí tạm tính", money(sum(lessons.map(lessonStudentAmount))), "Theo số giờ đã xếp", "receipt")}
+      ${metric("Học phí tạm tính", money(sum(lessons.map(lessonStudentAmount))), "Theo tiền từng buổi", "receipt")}
     </section>
     <section class="grid grid-3">
       <div class="panel span-2">
@@ -1986,7 +1986,7 @@ function renderTeacherFinance() {
       <div class="panel-header">
         <div class="panel-title">
           <h2>Chi tiết tiền dạy</h2>
-          <p>Mỗi buổi học có đơn giá giáo viên riêng để admin linh hoạt điều chỉnh.</p>
+          <p>Mỗi buổi học có số tiền giáo viên riêng do admin nhập.</p>
         </div>
       </div>
       ${renderLessonsTable(sortedLessons(lessons), false, "teacher")}
@@ -2001,7 +2001,7 @@ function renderStudentPayments() {
   const total = sum(lessons.map(lessonStudentAmount));
   return `
     <section class="grid grid-3">
-      ${metric("Học phí tạm tính", money(total), "Theo lịch đã xếp", "receipt")}
+      ${metric("Học phí tạm tính", money(total), "Theo tiền từng buổi", "receipt")}
       ${metric("Số buổi", lessons.length, "Chưa hủy", "book-open")}
       ${metric("Số giờ", formatNumber(sum(lessons.map((lesson) => lesson.durationHours))), "Tổng thời lượng", "clock")}
     </section>
@@ -2009,7 +2009,7 @@ function renderStudentPayments() {
       <div class="panel-header">
         <div class="panel-title">
           <h2>Chi tiết học phí</h2>
-          <p>Học phí được tính theo số giờ học và đơn giá từng buổi.</p>
+          <p>Học phí được tính theo số tiền từng buổi do admin nhập.</p>
         </div>
       </div>
       ${renderLessonsTable(sortedLessons(lessons), false, "student")}
@@ -2918,8 +2918,8 @@ function renderLessonsTable(lessons, adminActions, moneyMode = "both") {
 }
 
 function renderLessonMoney(lesson, mode) {
-  if (mode === "teacher") return `${money(lessonTeacherAmount(lesson))}<div class="meta-subtitle">${money(lesson.teacherRatePerHour)}/giờ</div>`;
-  if (mode === "student") return `${money(lessonStudentAmount(lesson))}<div class="meta-subtitle">${money(lesson.studentRatePerHour)}/giờ</div>`;
+  if (mode === "teacher") return `${money(lessonTeacherAmount(lesson))}<div class="meta-subtitle">Theo buổi học</div>`;
+  if (mode === "student") return `${money(lessonStudentAmount(lesson))}<div class="meta-subtitle">Theo buổi học</div>`;
   return `
     <div>GV: ${money(lessonTeacherAmount(lesson))}</div>
     <div class="meta-subtitle">HV: ${money(lessonStudentAmount(lesson))}</div>
@@ -3540,6 +3540,8 @@ function editLesson(lessonId) {
 
 function lessonDraftFromForm(data, teacher, student, durationHours) {
   const meetUrl = normalizeMeetUrl(data.get("googleMeetUrl"));
+  const teacherAmount = Number(data.get("teacherLessonAmount"));
+  const studentAmount = Number(data.get("studentLessonAmount"));
   return {
     teacherId: teacher.id,
     studentId: student.id,
@@ -3547,8 +3549,10 @@ function lessonDraftFromForm(data, teacher, student, durationHours) {
     date: String(data.get("date")),
     startTime: String(data.get("startTime")),
     durationHours,
-    teacherRatePerHour: Number(data.get("teacherRatePerHour")) || Number(teacher.ratePerHour || state.settings.defaultTeacherRate),
-    studentRatePerHour: Number(data.get("studentRatePerHour")) || Number(student.studentRatePerHour || state.settings.defaultStudentRate),
+    teacherLessonAmount: Number.isFinite(teacherAmount) && teacherAmount >= 0 ? teacherAmount : Number(teacher.ratePerHour || state.settings.defaultTeacherRate),
+    studentLessonAmount: Number.isFinite(studentAmount) && studentAmount >= 0 ? studentAmount : Number(student.studentRatePerHour || state.settings.defaultStudentRate),
+    teacherRatePerHour: Number(teacher.ratePerHour || state.settings.defaultTeacherRate),
+    studentRatePerHour: Number(student.studentRatePerHour || state.settings.defaultStudentRate),
     videoProvider: meetUrl ? "google-meet-manual" : "fallback",
     googleMeetUrl: meetUrl,
     notes: String(data.get("notes") || "").trim()
@@ -4035,11 +4039,11 @@ async function saveSettings(form) {
 }
 
 async function startCall(lessonId) {
-  if (currentAccount()?.role !== "admin") {
-    showToast("Chỉ admin có quyền bắt đầu video call.");
+  const lesson = getLesson(lessonId);
+  if (!canCurrentUserStartCall(lesson)) {
+    showToast("Chỉ admin hoặc giáo viên của buổi học có quyền bắt đầu video call.");
     return;
   }
-  const lesson = getLesson(lessonId);
   if (!lesson || lesson.status === "cancelled") {
     showToast("Không thể mở phòng cho buổi học này.");
     return;
@@ -4055,17 +4059,17 @@ async function startCall(lessonId) {
   state.callState.startedAt = now;
   selectedVideoLessonId = lesson.id;
   activeView = "video";
-  await persistState("Admin đã mở phòng video cho lớp học.");
+  await persistState("Đã mở phòng video cho lớp học.");
   render();
 }
 
 async function stopCall(lessonId) {
-  if (currentAccount()?.role !== "admin") {
-    showToast("Chỉ admin có quyền kết thúc video call.");
-    return;
-  }
   const targetId = lessonId || selectedVideoLessonId || state.callState.activeLessonId;
   const lesson = getLesson(targetId);
+  if (!canCurrentUserStartCall(lesson)) {
+    showToast("Chỉ admin hoặc giáo viên của buổi học có quyền kết thúc video call.");
+    return;
+  }
   if (!lesson || !isLessonLive(lesson)) {
     showToast("Không tìm thấy lớp đang mở.");
     return;
@@ -4555,10 +4559,12 @@ function lessonTime(lesson) {
 }
 
 function lessonTeacherAmount(lesson) {
+  if (Number.isFinite(Number(lesson.teacherLessonAmount))) return roundMoney(Number(lesson.teacherLessonAmount));
   return roundMoney(Number(lesson.durationHours || 0) * Number(lesson.teacherRatePerHour || getTeacher(lesson.teacherId)?.ratePerHour || state.settings.defaultTeacherRate || 0));
 }
 
 function lessonStudentAmount(lesson) {
+  if (Number.isFinite(Number(lesson.studentLessonAmount))) return roundMoney(Number(lesson.studentLessonAmount));
   return roundMoney(Number(lesson.durationHours || 0) * Number(lesson.studentRatePerHour || getStudent(lesson.studentId)?.studentRatePerHour || state.settings.defaultStudentRate || 0));
 }
 
@@ -4674,6 +4680,13 @@ function canCurrentUserJoin(lesson) {
   return false;
 }
 
+function canCurrentUserStartCall(lesson) {
+  const user = currentAccount();
+  if (!user || !lesson || lesson.status === "cancelled") return false;
+  if (user.role === "admin") return true;
+  return user.role === "teacher" && user.profileId === lesson.teacherId;
+}
+
 function adminLessonButtons(lesson) {
   const isActive = isLessonLive(lesson);
   return `
@@ -4699,9 +4712,20 @@ function lessonButtons(lesson) {
   if (!user) return "";
   if (user.role === "admin") return adminLessonButtons(lesson);
   const canJoin = canCurrentUserJoin(lesson);
+  const canStart = canCurrentUserStartCall(lesson);
+  if (user.role === "teacher" && canStart) {
+    return `
+      ${
+        isLessonLive(lesson)
+          ? `<button class="btn btn-primary btn-small" type="button" data-action="join-call" data-id="${safe(lesson.id)}">${icon("video")} Vào lớp</button>
+             <button class="btn btn-warning btn-small" type="button" data-action="stop-call" data-id="${safe(lesson.id)}">${icon("phone-off")} Dừng</button>`
+          : `<button class="btn btn-blue btn-small" type="button" data-action="start-call" data-id="${safe(lesson.id)}">${icon("video")} Mở lớp</button>`
+      }
+    `;
+  }
   return `
     <button class="btn ${canJoin ? "btn-primary" : "btn-secondary"} btn-small" type="button" data-action="join-call" data-id="${safe(lesson.id)}" ${canJoin ? "" : "disabled"}>
-      ${icon(canJoin ? "video" : "lock")} ${canJoin ? "Vào lớp" : "Chờ admin"}
+      ${icon(canJoin ? "video" : "lock")} ${canJoin ? "Vào lớp" : "Chờ mở lớp"}
     </button>
   `;
 }
@@ -5047,5 +5071,5 @@ function safe(value) {
 
 function registerServiceWorker() {
   if (!("serviceWorker" in navigator) || !canUseServerApi()) return;
-  navigator.serviceWorker.register("service-worker.js?v=20260525-audit-backup").catch(() => {});
+  navigator.serviceWorker.register("service-worker.js?v=20260525-teacher-open-session-money").catch(() => {});
 }
