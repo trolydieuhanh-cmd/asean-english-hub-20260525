@@ -341,6 +341,18 @@ const EN_TRANSLATIONS = {
   "Vui lòng nhập đủ họ tên và email.": "Please enter full name and email.",
   "Không tìm thấy buổi học cần sửa.": "Could not find the lesson to edit.",
   "Đã cập nhật phân công và lịch học.": "Assignment and schedule updated.",
+  "Tạo lịch lặp hằng tuần": "Create weekly recurring schedule",
+  "Tạo nhanh nhiều buổi học theo tuần cho cùng một giáo viên và học viên.": "Quickly create multiple weekly lessons for the same teacher and student.",
+  "Số tuần": "Weeks",
+  "Ngày học trong tuần": "Class days in the week",
+  "Tạo lịch lặp": "Create recurring schedule",
+  "Import lịch CSV": "Import schedule CSV",
+  "Dán nhiều dòng lịch học, hệ thống sẽ tạo hàng loạt và bỏ qua dòng bị trùng lịch.": "Paste multiple lesson rows; the system will create them in bulk and skip schedule conflicts.",
+  "Dữ liệu CSV": "CSV data",
+  "Import CSV": "Import CSV",
+  "Bạn có lịch học mới": "You have a new lesson",
+  "Lịch học đã được cập nhật": "Lesson schedule updated",
+  "CSV cần có dòng tiêu đề và ít nhất một dòng dữ liệu.": "CSV needs a header row and at least one data row.",
   "Vào lớp": "Join class",
   "Xem lịch": "View schedule",
   "Admin đã mở phòng video cho lớp học.": "Admin opened the video room for this class.",
@@ -1240,6 +1252,15 @@ function visibleLessonsForAccount(targetState, account) {
   return [];
 }
 
+function notificationVisibleForUser(notice, user) {
+  if (!notice || !user) return false;
+  if (user.role === "admin") return true;
+  if (notice.targetAccountId) return notice.targetAccountId === user.id;
+  if (user.role === "teacher" && notice.targetTeacherId) return notice.targetTeacherId === user.profileId;
+  if (user.role === "student" && notice.targetStudentId) return notice.targetStudentId === user.profileId;
+  return notice.audience === "all" || notice.audience === user.role;
+}
+
 function lessonIsLiveInState(lesson, targetState) {
   const activeIds = Array.isArray(targetState?.callState?.activeLessonIds) ? targetState.callState.activeLessonIds : [];
   return Boolean(lesson && lesson.status !== "cancelled" && (lesson.adminStarted || activeIds.includes(lesson.id)));
@@ -1613,6 +1634,7 @@ function renderAdminSchedule() {
         </div>
       </form>
     </section>
+    ${renderBulkScheduleTools()}
     <section class="panel">
       <div class="panel-header">
         <div class="panel-title">
@@ -1630,6 +1652,104 @@ function renderAdminSchedule() {
         </div>
       </div>
       ${renderLessonsTable(sortedLessons(), true)}
+    </section>
+  `;
+}
+
+function renderBulkScheduleTools() {
+  return `
+    <section class="grid grid-2">
+      <div class="panel">
+        <div class="panel-header">
+          <div class="panel-title">
+            <h2>Tạo lịch lặp hằng tuần</h2>
+            <p>Tạo nhanh nhiều buổi học theo tuần cho cùng một giáo viên và học viên.</p>
+          </div>
+        </div>
+        <form id="recurring-lesson-form" class="form-grid">
+          <div class="field wide">
+            <label for="recurring-title">Tên buổi học</label>
+            <input class="input" id="recurring-title" name="title" required placeholder="Ví dụ: IELTS speaking - Visa interview" />
+          </div>
+          <div class="field">
+            <label for="recurring-teacher">Giáo viên</label>
+            <select class="select" id="recurring-teacher" name="teacherId" required>
+              ${state.teachers.map((teacher) => `<option value="${safe(teacher.id)}">${safe(teacher.name)}</option>`).join("")}
+            </select>
+          </div>
+          <div class="field">
+            <label for="recurring-student">Học viên</label>
+            <select class="select" id="recurring-student" name="studentId" required>
+              ${state.students.map((student) => `<option value="${safe(student.id)}">${safe(student.name)}</option>`).join("")}
+            </select>
+          </div>
+          <div class="field">
+            <label for="recurring-start-date">Ngày bắt đầu</label>
+            <input class="input" id="recurring-start-date" name="startDate" type="date" required value="${safe(todayISO())}" />
+          </div>
+          <div class="field">
+            <label for="recurring-weeks">Số tuần</label>
+            <input class="input" id="recurring-weeks" name="weeks" type="number" min="1" max="52" value="4" required />
+          </div>
+          <div class="field">
+            <label for="recurring-time">Giờ bắt đầu</label>
+            <input class="input" id="recurring-time" name="startTime" type="time" value="20:00" required />
+          </div>
+          <div class="field">
+            <label for="recurring-duration">Số giờ</label>
+            <input class="input" id="recurring-duration" name="durationHours" type="number" min="0.25" step="0.25" value="1" required />
+          </div>
+          <div class="field">
+            <label for="recurring-teacher-amount">Tiền giáo viên/buổi</label>
+            <input class="input" id="recurring-teacher-amount" name="teacherLessonAmount" type="number" min="0" step="0.5" required />
+          </div>
+          <div class="field">
+            <label for="recurring-student-amount">Học phí học viên/buổi</label>
+            <input class="input" id="recurring-student-amount" name="studentLessonAmount" type="number" min="0" step="0.5" required />
+          </div>
+          <div class="field full">
+            <label>Ngày học trong tuần</label>
+            <div class="weekday-picker">
+              ${weekdayOptions()
+                .map(
+                  (day) => `
+                    <label class="check-item">
+                      <input type="checkbox" name="weekdays" value="${day.value}" ${day.value === new Date(`${todayISO()}T00:00:00`).getDay() ? "checked" : ""} />
+                      <span>${day.label}</span>
+                    </label>
+                  `
+                )
+                .join("")}
+            </div>
+          </div>
+          <div class="field full">
+            <label for="recurring-meet-url">Link Google Meet</label>
+            <input class="input" id="recurring-meet-url" name="googleMeetUrl" type="url" inputmode="url" placeholder="https://meet.google.com/abc-defg-hij" />
+          </div>
+          <div class="field full">
+            <label for="recurring-notes">Ghi chú</label>
+            <textarea class="textarea" id="recurring-notes" name="notes"></textarea>
+          </div>
+          <div class="full button-row">
+            <button class="btn btn-primary" type="submit">${icon("calendar-plus")} Tạo lịch lặp</button>
+          </div>
+        </form>
+      </div>
+      <div class="panel">
+        <div class="panel-header">
+          <div class="panel-title">
+            <h2>Import lịch CSV</h2>
+            <p>Dán nhiều dòng lịch học, hệ thống sẽ tạo hàng loạt và bỏ qua dòng bị trùng lịch.</p>
+          </div>
+        </div>
+        <form id="csv-lesson-form" class="form-stack">
+          <div class="field">
+            <label for="csv-lessons">Dữ liệu CSV</label>
+            <textarea class="textarea code-textarea" id="csv-lessons" name="csv" required placeholder="title,date,startTime,durationHours,teacherEmail,studentEmail,teacherLessonAmount,studentLessonAmount,googleMeetUrl,notes&#10;IELTS Speaking,2026-06-01,20:00,1,maria@example.com,student@example.com,10,18,,Lesson note"></textarea>
+          </div>
+          <button class="btn btn-primary" type="submit">${icon("upload")} Import CSV</button>
+        </form>
+      </div>
     </section>
   `;
 }
@@ -2457,7 +2577,7 @@ function renderPlacementResult(test) {
 function renderNotifications() {
   const user = currentAccount();
   const visibleNotices = state.notifications
-    .filter((notice) => notice.audience === "all" || notice.audience === user.role)
+    .filter((notice) => notificationVisibleForUser(notice, user))
     .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
 
   return `
@@ -3357,6 +3477,18 @@ function handleSubmit(event) {
     return;
   }
 
+  if (event.target.id === "recurring-lesson-form") {
+    event.preventDefault();
+    createRecurringLessons(event.target);
+    return;
+  }
+
+  if (event.target.id === "csv-lesson-form") {
+    event.preventDefault();
+    importLessonsCsv(event.target);
+    return;
+  }
+
   if (event.target.id === "account-form") {
     event.preventDefault();
     createAccount(event.target);
@@ -3498,6 +3630,7 @@ async function createLesson(form) {
   };
 
   state.lessons.push(lesson);
+  addLessonNotification(lesson, "created");
   await persistState("Đã tạo lịch học mới.");
   form.reset();
   activeView = "schedule";
@@ -3523,9 +3656,80 @@ async function updateLesson(form) {
   const draft = lessonDraftFromForm(data, teacher, student, durationHours);
   if (!confirmLessonConflicts(draft, lesson.id)) return;
 
+  const previousLesson = JSON.parse(JSON.stringify(lesson));
   Object.assign(lesson, draft);
+  addLessonNotification(lesson, "updated", previousLesson);
   editingLessonId = null;
   await persistState("Đã cập nhật phân công và lịch học.");
+  activeView = "schedule";
+  render();
+}
+
+async function createRecurringLessons(form) {
+  const data = new FormData(form);
+  const teacher = getTeacher(String(data.get("teacherId")));
+  const student = getStudent(String(data.get("studentId")));
+  const startDate = String(data.get("startDate"));
+  const weeks = Math.max(1, Math.min(Number(data.get("weeks")) || 1, 52));
+  const weekdays = data.getAll("weekdays").map(Number).filter((value) => Number.isInteger(value));
+  const durationHours = Number(data.get("durationHours"));
+  if (!teacher || !student || !startDate || !weekdays.length || !Number.isFinite(durationHours) || durationHours <= 0) {
+    showToast("Thông tin lịch học chưa hợp lệ.");
+    return;
+  }
+  if (!validateLessonMeetUrl(data)) return;
+
+  const drafts = recurringLessonDates(startDate, weeks, weekdays).map((date) => lessonDraftFromForm(data, teacher, student, durationHours, { date }));
+  const result = addLessonDrafts(drafts);
+  await persistState(`Đã tạo ${result.created} lịch học. ${result.skipped ? `Bỏ qua ${result.skipped} lịch trùng.` : ""}`);
+  form.reset();
+  activeView = "schedule";
+  render();
+}
+
+async function importLessonsCsv(form) {
+  const rows = parseCsv(String(new FormData(form).get("csv") || ""));
+  if (rows.length < 2) {
+    showToast("CSV cần có dòng tiêu đề và ít nhất một dòng dữ liệu.");
+    return;
+  }
+  const header = rows[0].map((item) => item.trim());
+  const drafts = [];
+  const errors = [];
+  rows.slice(1).forEach((row, index) => {
+    if (!row.some((cell) => String(cell || "").trim())) return;
+    const item = Object.fromEntries(header.map((key, keyIndex) => [key, row[keyIndex] || ""]));
+    const teacher = findTeacherByEmail(item.teacherEmail);
+    const student = findStudentByEmail(item.studentEmail);
+    const durationHours = Number(item.durationHours);
+    if (!teacher || !student || !item.date || !item.startTime || !Number.isFinite(durationHours) || durationHours <= 0) {
+      errors.push(index + 2);
+      return;
+    }
+    const meetUrl = normalizeMeetUrl(item.googleMeetUrl);
+    if (String(item.googleMeetUrl || "").trim() && !meetUrl) {
+      errors.push(index + 2);
+      return;
+    }
+    drafts.push({
+      teacherId: teacher.id,
+      studentId: student.id,
+      title: String(item.title || "").trim() || `${teacher.name} - ${student.name}`,
+      date: String(item.date || "").trim(),
+      startTime: String(item.startTime || "").trim(),
+      durationHours,
+      teacherLessonAmount: Number(item.teacherLessonAmount) || Number(teacher.ratePerHour || state.settings.defaultTeacherRate),
+      studentLessonAmount: Number(item.studentLessonAmount) || Number(student.studentRatePerHour || state.settings.defaultStudentRate),
+      teacherRatePerHour: Number(teacher.ratePerHour || state.settings.defaultTeacherRate),
+      studentRatePerHour: Number(student.studentRatePerHour || state.settings.defaultStudentRate),
+      videoProvider: meetUrl ? "google-meet-manual" : "fallback",
+      googleMeetUrl: meetUrl,
+      notes: String(item.notes || "").trim()
+    });
+  });
+  const result = addLessonDrafts(drafts);
+  await persistState(`Import xong ${result.created} lịch. ${result.skipped ? `Bỏ qua ${result.skipped} lịch trùng. ` : ""}${errors.length ? `Lỗi dòng: ${errors.join(", ")}.` : ""}`);
+  form.reset();
   activeView = "schedule";
   render();
 }
@@ -3538,7 +3742,7 @@ function editLesson(lessonId) {
   render();
 }
 
-function lessonDraftFromForm(data, teacher, student, durationHours) {
+function lessonDraftFromForm(data, teacher, student, durationHours, overrides = {}) {
   const meetUrl = normalizeMeetUrl(data.get("googleMeetUrl"));
   const teacherAmount = Number(data.get("teacherLessonAmount"));
   const studentAmount = Number(data.get("studentLessonAmount"));
@@ -3546,7 +3750,7 @@ function lessonDraftFromForm(data, teacher, student, durationHours) {
     teacherId: teacher.id,
     studentId: student.id,
     title: String(data.get("title") || "").trim(),
-    date: String(data.get("date")),
+    date: overrides.date || String(data.get("date")),
     startTime: String(data.get("startTime")),
     durationHours,
     teacherLessonAmount: Number.isFinite(teacherAmount) && teacherAmount >= 0 ? teacherAmount : Number(teacher.ratePerHour || state.settings.defaultTeacherRate),
@@ -3564,6 +3768,132 @@ function validateLessonMeetUrl(data) {
   if (!rawMeetUrl || normalizeMeetUrl(rawMeetUrl)) return true;
   showToast("Link Google Meet phải có dạng https://meet.google.com/...");
   return false;
+}
+
+function addLessonDrafts(drafts) {
+  let created = 0;
+  let skipped = 0;
+  for (const draft of drafts) {
+    if (lessonScheduleConflicts(draft).length) {
+      skipped += 1;
+      continue;
+    }
+    const lesson = {
+      id: makeId("lesson"),
+      ...draft,
+      status: "scheduled",
+      roomId: makeId("asean-room"),
+      adminStarted: false,
+      createdBy: currentAccountId,
+      createdAt: new Date().toISOString()
+    };
+    state.lessons.push(lesson);
+    addLessonNotification(lesson, "created");
+    created += 1;
+  }
+  return { created, skipped };
+}
+
+function addLessonNotification(lesson, type, previousLesson = null) {
+  const title = type === "updated" ? "Lịch học đã được cập nhật" : "Bạn có lịch học mới";
+  const message = lessonNotificationMessage(lesson, type, previousLesson);
+  [
+    { audience: "teacher", targetTeacherId: lesson.teacherId, targetAccountId: accountForProfile("teacher", lesson.teacherId)?.id },
+    { audience: "student", targetStudentId: lesson.studentId, targetAccountId: accountForProfile("student", lesson.studentId)?.id },
+    previousLesson && previousLesson.teacherId !== lesson.teacherId
+      ? { audience: "teacher", targetTeacherId: previousLesson.teacherId, targetAccountId: accountForProfile("teacher", previousLesson.teacherId)?.id }
+      : null,
+    previousLesson && previousLesson.studentId !== lesson.studentId
+      ? { audience: "student", targetStudentId: previousLesson.studentId, targetAccountId: accountForProfile("student", previousLesson.studentId)?.id }
+      : null
+  ]
+    .filter(Boolean)
+    .forEach((target) => {
+      state.notifications.push({
+        id: makeId("notice"),
+        ...target,
+        title,
+        message,
+        lessonId: lesson.id,
+        createdBy: currentAccountId,
+        createdAt: new Date().toISOString()
+      });
+    });
+  pruneNotifications();
+}
+
+function lessonNotificationMessage(lesson, type, previousLesson = null) {
+  const teacher = getTeacher(lesson.teacherId);
+  const student = getStudent(lesson.studentId);
+  const nextText = `${lesson.title} - ${formatDate(lesson.date, "short")} ${lesson.startTime}, ${formatNumber(lesson.durationHours)} giờ. Giáo viên: ${teacher?.name || "N/A"}. Học viên: ${student?.name || "N/A"}.`;
+  if (type !== "updated" || !previousLesson) return nextText;
+  const beforeText = `${formatDate(previousLesson.date, "short")} ${previousLesson.startTime}`;
+  return `Lịch cũ: ${beforeText}. Lịch mới: ${nextText}`;
+}
+
+function pruneNotifications(limit = 500) {
+  if ((state.notifications || []).length <= limit) return;
+  state.notifications = [...state.notifications].sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt)).slice(0, limit);
+}
+
+function recurringLessonDates(startDate, weeks, weekdays) {
+  const start = new Date(`${startDate}T00:00:00`);
+  const dates = [];
+  for (let dayOffset = 0; dayOffset < weeks * 7; dayOffset += 1) {
+    const date = new Date(start);
+    date.setDate(start.getDate() + dayOffset);
+    if (weekdays.includes(date.getDay())) dates.push(date.toISOString().slice(0, 10));
+  }
+  return dates;
+}
+
+function weekdayOptions() {
+  return [
+    { value: 1, label: "T2" },
+    { value: 2, label: "T3" },
+    { value: 3, label: "T4" },
+    { value: 4, label: "T5" },
+    { value: 5, label: "T6" },
+    { value: 6, label: "T7" },
+    { value: 0, label: "CN" }
+  ];
+}
+
+function parseCsv(text) {
+  const rows = [];
+  let row = [];
+  let cell = "";
+  let quoted = false;
+  for (let index = 0; index < text.length; index += 1) {
+    const char = text[index];
+    const next = text[index + 1];
+    if (char === '"' && quoted && next === '"') {
+      cell += '"';
+      index += 1;
+      continue;
+    }
+    if (char === '"') {
+      quoted = !quoted;
+      continue;
+    }
+    if (char === "," && !quoted) {
+      row.push(cell.trim());
+      cell = "";
+      continue;
+    }
+    if ((char === "\n" || char === "\r") && !quoted) {
+      if (char === "\r" && next === "\n") index += 1;
+      row.push(cell.trim());
+      if (row.some((item) => item)) rows.push(row);
+      row = [];
+      cell = "";
+      continue;
+    }
+    cell += char;
+  }
+  row.push(cell.trim());
+  if (row.some((item) => item)) rows.push(row);
+  return rows;
 }
 
 async function createAccount(form) {
@@ -4527,6 +4857,16 @@ function getStudent(id) {
   return state.students.find((student) => student.id === id);
 }
 
+function findTeacherByEmail(email) {
+  const target = String(email || "").trim().toLowerCase();
+  return state.teachers.find((teacher) => String(teacher.email || "").toLowerCase() === target);
+}
+
+function findStudentByEmail(email) {
+  const target = String(email || "").trim().toLowerCase();
+  return state.students.find((student) => String(student.email || "").toLowerCase() === target);
+}
+
 function getLesson(id) {
   return state.lessons.find((lesson) => lesson.id === id);
 }
@@ -5071,5 +5411,5 @@ function safe(value) {
 
 function registerServiceWorker() {
   if (!("serviceWorker" in navigator) || !canUseServerApi()) return;
-  navigator.serviceWorker.register("service-worker.js?v=20260525-teacher-open-session-money").catch(() => {});
+  navigator.serviceWorker.register("service-worker.js?v=20260525-bulk-schedule").catch(() => {});
 }

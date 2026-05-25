@@ -1,10 +1,10 @@
-const CACHE_NAME = "asean-english-hub-v28";
+const CACHE_NAME = "asean-english-hub-v29";
 const APP_SHELL = [
   "./",
   "./index.html",
-  "./styles.css?v=20260525-teacher-open-session-money",
-  "./app.js?v=20260525-teacher-open-session-money",
-  "./manifest.webmanifest?v=20260525-teacher-open-session-money",
+  "./styles.css?v=20260525-bulk-schedule",
+  "./app.js?v=20260525-bulk-schedule",
+  "./manifest.webmanifest?v=20260525-bulk-schedule",
   "./assets/asean-holding-logo.png"
 ];
 
