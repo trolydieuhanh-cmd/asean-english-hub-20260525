@@ -6,3 +6,5 @@ dist
 *.log
 *.tar.gz
 *.zip
+data/*.json
+!data/asean-hub.example.json

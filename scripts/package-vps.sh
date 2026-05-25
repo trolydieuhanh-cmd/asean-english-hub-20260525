@@ -38,12 +38,15 @@ for item in \
   Dockerfile \
   docker-compose.yml \
   ecosystem.config.cjs \
-  data \
   deploy \
   scripts
 do
   copy_item "$item"
 done
+
+mkdir -p "$DIST_DIR/data"
+copy_item "data/README.md"
+copy_item "data/asean-hub.example.json"
 
 (
   cd "$ROOT_DIR/dist"

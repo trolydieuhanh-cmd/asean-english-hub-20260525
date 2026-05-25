@@ -1,6 +1,7 @@
 const STORAGE_KEY = "asean-english-hub-state-v1";
 const SESSION_KEY = "asean-english-hub-current-account";
 const AUTH_TOKEN_KEY = "asean-english-hub-session-token";
+const CSRF_TOKEN_KEY = "asean-english-hub-csrf-token";
 const LANGUAGE_KEY = "asean-english-hub-language";
 const SYNC_INTERVAL_MS = 3000;
 const LOGO_SRC = "assets/asean-holding-logo.png";
@@ -807,13 +808,16 @@ function canUseServerApi() {
 function authHeaders(extra = {}) {
   const headers = { ...extra };
   const token = sessionStorage.getItem(AUTH_TOKEN_KEY);
+  const csrfToken = sessionStorage.getItem(CSRF_TOKEN_KEY);
   if (token) headers.Authorization = `Bearer ${token}`;
+  if (csrfToken) headers["X-CSRF-Token"] = csrfToken;
   return headers;
 }
 
 function clearSessionStorage() {
   sessionStorage.removeItem(SESSION_KEY);
   sessionStorage.removeItem(AUTH_TOKEN_KEY);
+  sessionStorage.removeItem(CSRF_TOKEN_KEY);
 }
 
 function normalizeState(input) {
@@ -3305,6 +3309,7 @@ async function loginFromForm(form) {
         state = normalizeState(payload.state);
         serverOnline = true;
         if (payload.sessionToken) sessionStorage.setItem(AUTH_TOKEN_KEY, payload.sessionToken);
+        if (payload.csrfToken) sessionStorage.setItem(CSRF_TOKEN_KEY, payload.csrfToken);
         localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
         loginAs(payload.account, { persist: false });
         return;
@@ -4930,5 +4935,5 @@ function safe(value) {
 
 function registerServiceWorker() {
   if (!("serviceWorker" in navigator) || !canUseServerApi()) return;
-  navigator.serviceWorker.register("service-worker.js?v=20260523-mobile-compact").catch(() => {});
+  navigator.serviceWorker.register("service-worker.js?v=20260525-security-hardening").catch(() => {});
 }

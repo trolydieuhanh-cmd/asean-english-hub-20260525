@@ -14,9 +14,13 @@ const HOST = process.env.HOST || "0.0.0.0";
 const DATA_FILE = path.resolve(ROOT, process.env.DATA_FILE || path.join("data", "asean-hub.json"));
 const MAX_BODY_SIZE = 25 * 1024 * 1024;
 const SESSION_COOKIE = "asean_session";
+const CSRF_HEADER = "x-csrf-token";
 const SESSION_TTL_MS = Number(process.env.SESSION_TTL_HOURS || 12) * 60 * 60 * 1000;
 const PASSWORD_ITERATIONS = Number(process.env.PASSWORD_ITERATIONS || 210000);
 const APP_SECRET = process.env.APP_SECRET || "dev-only-change-this-secret";
+const IS_PRODUCTION = process.env.NODE_ENV === "production";
+const LOGIN_RATE_LIMIT_WINDOW_MS = Number(process.env.LOGIN_RATE_LIMIT_WINDOW_MS || 15 * 60 * 1000);
+const LOGIN_RATE_LIMIT_MAX = Number(process.env.LOGIN_RATE_LIMIT_MAX || 10);
 const SYSTEM_EMAIL_FROM = process.env.SYSTEM_EMAIL_FROM || "Asean Hitech System <no-reply@asean-vietnam.com>";
 const PUBLIC_APP_URL = process.env.PUBLIC_APP_URL || "https://asean-vietnam.com";
 const SENDMAIL_PATH = process.env.SENDMAIL_PATH || "/usr/sbin/sendmail";
@@ -29,6 +33,7 @@ const GOOGLE_MEET_SCOPE = "https://www.googleapis.com/auth/meetings.space.create
 const GOOGLE_OAUTH_SCOPES = ["openid", "email", GOOGLE_MEET_SCOPE];
 const sessions = new Map();
 const googleOAuthStates = new Map();
+const loginAttempts = new Map();
 
 const contentTypes = {
   ".html": "text/html; charset=utf-8",
@@ -44,24 +49,45 @@ const contentTypes = {
   ".svg": "image/svg+xml"
 };
 
+const securityHeaders = {
+  "X-Content-Type-Options": "nosniff",
+  "X-Frame-Options": "DENY",
+  "Referrer-Policy": "strict-origin-when-cross-origin",
+  "Permissions-Policy": "camera=(self), microphone=(self), geolocation=(), payment=(), usb=()",
+  "Content-Security-Policy": [
+    "default-src 'self'",
+    "base-uri 'self'",
+    "object-src 'none'",
+    "frame-ancestors 'none'",
+    "form-action 'self'",
+    "script-src 'self' https://unpkg.com",
+    "style-src 'self' 'unsafe-inline'",
+    "img-src 'self' data: https://images.unsplash.com",
+    "font-src 'self' data:",
+    "media-src 'self' data: blob:",
+    "connect-src 'self'",
+    "frame-src 'self' https://meet.google.com"
+  ].join("; ")
+};
+
 const server = http.createServer(async (request, response) => {
   try {
     const requestUrl = new URL(request.url, `http://${request.headers.host}`);
 
     if (requestUrl.pathname === "/api/health" && request.method === "GET") {
-      return sendJson(response, 200, { ok: true, storage: DATA_FILE });
+      return sendJson(response, 200, { ok: true });
     }
 
     if (requestUrl.pathname === "/api/login" && request.method === "POST") {
-      return handleLogin(request, response);
+      return await handleLogin(request, response);
     }
 
     if (requestUrl.pathname === "/api/logout" && request.method === "POST") {
-      return handleLogout(request, response);
+      return await handleLogout(request, response);
     }
 
     if (requestUrl.pathname === "/api/change-password" && request.method === "POST") {
-      return handleChangePassword(request, response);
+      return await handleChangePassword(request, response);
     }
 
     if (requestUrl.pathname === "/api/me" && request.method === "GET") {
@@ -70,15 +96,15 @@ const server = http.createServer(async (request, response) => {
     }
 
     if (requestUrl.pathname === "/api/google/status" && request.method === "GET") {
-      return handleGoogleStatus(request, response);
+      return await handleGoogleStatus(request, response);
     }
 
     if (requestUrl.pathname === "/api/google/oauth/start" && request.method === "GET") {
-      return handleGoogleOAuthStart(request, response);
+      return await handleGoogleOAuthStart(request, response);
     }
 
     if (requestUrl.pathname === "/api/google/oauth/callback" && request.method === "GET") {
-      return handleGoogleOAuthCallback(requestUrl, response);
+      return await handleGoogleOAuthCallback(requestUrl, response);
     }
 
     if (requestUrl.pathname === "/api/state" && request.method === "GET") {
@@ -88,6 +114,7 @@ const server = http.createServer(async (request, response) => {
 
     if (requestUrl.pathname === "/api/state" && request.method === "POST") {
       const { state, account } = await requireAuth(request);
+      requireCsrf(request);
       const parsed = JSON.parse(await readBody(request));
       const emailJobs = [];
       const nextState = account.role === "admin" ? prepareAdminState(parsed, state, emailJobs) : mergeLimitedState(state, parsed, account);
@@ -105,7 +132,7 @@ const server = http.createServer(async (request, response) => {
       return sendJson(response, 405, { error: "Method not allowed" });
     }
 
-    return serveStatic(request, response);
+    return await serveStatic(request, response);
   } catch (error) {
     const status = error.statusCode || 500;
     return sendJson(response, status, { error: error.message || "Server error" });
@@ -116,22 +143,35 @@ server.listen(PORT, HOST, () => {
   console.log(`Asean Holding English Hub running at http://${HOST}:${PORT}`);
   console.log(`Data file: ${DATA_FILE}`);
   if (!process.env.APP_SECRET) console.warn("APP_SECRET is not set. Set a strong secret before production use.");
+  if (IS_PRODUCTION && APP_SECRET === "dev-only-change-this-secret") {
+    console.error("APP_SECRET must be set to a strong random value in production.");
+    process.exit(1);
+  }
 });
 
 async function handleLogin(request, response) {
+  enforceTrustedOrigin(request);
   const { email, password } = JSON.parse(await readBody(request));
+  const rateKey = loginRateKey(request, email);
+  if (isLoginRateLimited(rateKey)) {
+    return sendJson(response, 429, { error: "Too many login attempts. Please try again later." });
+  }
   const state = await loadState();
   const account = state.accounts.find((item) => String(item.email || "").toLowerCase() === String(email || "").trim().toLowerCase());
   if (!account || account.status !== "active" || !verifyPassword(String(password || ""), account)) {
+    recordFailedLogin(rateKey);
     return sendJson(response, 401, { error: "Invalid email or password" });
   }
+  clearLoginRate(rateKey);
 
   markAccountOnline(account);
   await saveState(state);
 
   const sessionId = crypto.randomBytes(32).toString("hex");
+  const csrfToken = crypto.randomBytes(32).toString("hex");
   sessions.set(sessionId, {
     accountId: account.id,
+    csrfToken,
     expiresAt: Date.now() + SESSION_TTL_MS
   });
 
@@ -140,6 +180,7 @@ async function handleLogin(request, response) {
   return sendJson(response, 200, {
     ok: true,
     sessionToken,
+    csrfToken,
     account: sanitizeAccount(account),
     state: sanitizeStateForAccount(state, account)
   });
@@ -149,6 +190,8 @@ async function handleLogout(request, response) {
   if (isUnloadBeaconLogout(request)) {
     return sendJson(response, 200, { ok: true, ignored: true });
   }
+  enforceTrustedOrigin(request);
+  requireCsrf(request);
   const sessionId = readSessionId(request);
   if (sessionId) {
     const session = sessions.get(sessionId);
@@ -174,6 +217,7 @@ function isUnloadBeaconLogout(request) {
 
 async function handleChangePassword(request, response) {
   const { state, account } = await requireAuth(request);
+  requireCsrf(request);
   if (!["teacher", "student"].includes(account.role)) {
     return sendJson(response, 403, { error: "Only teacher and student accounts can change passwords here" });
   }
@@ -214,6 +258,7 @@ async function handleGoogleStatus(request, response) {
 
 async function handleGoogleOAuthStart(request, response) {
   const { sessionId } = await requireAdmin(request);
+  enforceTrustedOrigin(request);
   if (!GOOGLE_MEET_API_ENABLED) {
     return sendJson(response, 400, {
       error: "Google Meet API automation is disabled. Use manual Google Meet links in lesson schedules.",
@@ -308,7 +353,9 @@ async function loadState() {
 async function saveState(state) {
   migrateSecurity(state);
   await fs.promises.mkdir(path.dirname(DATA_FILE), { recursive: true });
-  await fs.promises.writeFile(DATA_FILE, `${JSON.stringify(state, null, 2)}\n`, "utf8");
+  const tempFile = `${DATA_FILE}.${process.pid}.${Date.now()}.tmp`;
+  await fs.promises.writeFile(tempFile, `${JSON.stringify(state, null, 2)}\n`, { encoding: "utf8", mode: 0o600 });
+  await fs.promises.rename(tempFile, DATA_FILE);
 }
 
 async function attachGoogleMeetLinks(nextState, previousState) {
@@ -465,7 +512,7 @@ function pruneGoogleOAuthStates() {
 }
 
 function redirect(response, location) {
-  response.writeHead(302, { Location: location });
+  writeResponseHead(response, 302, { Location: location });
   response.end();
 }
 
@@ -890,6 +937,38 @@ function readSessionId(request) {
   return readSignedSessionValue(signedValue);
 }
 
+function requireCsrf(request) {
+  enforceTrustedOrigin(request);
+  const sessionId = readSessionId(request);
+  const session = sessionId ? sessions.get(sessionId) : null;
+  const csrfToken = String(request.headers[CSRF_HEADER] || "");
+  if (!session?.csrfToken || !timingSafeText(csrfToken, session.csrfToken)) {
+    const error = new Error("Invalid CSRF token");
+    error.statusCode = 403;
+    throw error;
+  }
+}
+
+function enforceTrustedOrigin(request) {
+  const origin = request.headers.origin || request.headers.referer;
+  if (!origin) return;
+  let originUrl;
+  try {
+    originUrl = new URL(origin);
+  } catch (error) {
+    const invalidError = new Error("Invalid request origin");
+    invalidError.statusCode = 403;
+    throw invalidError;
+  }
+  const host = String(request.headers["x-forwarded-host"] || request.headers.host || "").split(",")[0].trim();
+  const protocol = String(request.headers["x-forwarded-proto"] || (isHttpsRequest(request) ? "https" : "http")).split(",")[0].trim();
+  if (originUrl.host !== host || originUrl.protocol.replace(":", "") !== protocol) {
+    const error = new Error("Untrusted request origin");
+    error.statusCode = 403;
+    throw error;
+  }
+}
+
 function readSignedSessionValue(signedValue) {
   if (!signedValue) return null;
   const [sessionId, signature] = signedValue.split(".");
@@ -906,6 +985,37 @@ function serializeSessionCookie(request, sessionId) {
 function clearSessionCookie(request) {
   const secure = isHttpsRequest(request) ? "; Secure" : "";
   return `${SESSION_COOKIE}=; Path=/; HttpOnly; SameSite=Lax; Max-Age=0${secure}`;
+}
+
+function loginRateKey(request, email) {
+  return `${clientIp(request)}:${String(email || "").trim().toLowerCase()}`;
+}
+
+function isLoginRateLimited(key) {
+  const now = Date.now();
+  const entry = loginAttempts.get(key);
+  if (!entry || entry.expiresAt <= now) return false;
+  return entry.count >= LOGIN_RATE_LIMIT_MAX;
+}
+
+function recordFailedLogin(key) {
+  const now = Date.now();
+  const entry = loginAttempts.get(key);
+  if (!entry || entry.expiresAt <= now) {
+    loginAttempts.set(key, { count: 1, expiresAt: now + LOGIN_RATE_LIMIT_WINDOW_MS });
+    return;
+  }
+  entry.count += 1;
+}
+
+function clearLoginRate(key) {
+  loginAttempts.delete(key);
+}
+
+function clientIp(request) {
+  return String(request.headers["x-forwarded-for"] || request.socket.remoteAddress || "")
+    .split(",")[0]
+    .trim();
 }
 
 function signSessionId(sessionId) {
@@ -982,12 +1092,13 @@ function serveStatic(request, response) {
       : requestedPathname.endsWith("/")
         ? `${requestedPathname}index.html`
         : requestedPathname;
-  if (pathname.startsWith("/data/")) {
-    return sendJson(response, 403, { error: "Data files are only available through the API" });
+  if (isBlockedStaticPath(pathname)) {
+    return sendJson(response, 403, { error: "Forbidden" });
   }
   const filePath = path.normalize(path.join(ROOT, pathname));
+  const rootPrefix = `${ROOT}${path.sep}`;
 
-  if (!filePath.startsWith(ROOT)) {
+  if (filePath !== ROOT && !filePath.startsWith(rootPrefix)) {
     return sendJson(response, 403, { error: "Forbidden" });
   }
 
@@ -998,13 +1109,13 @@ function serveStatic(request, response) {
       }
       return fs.readFile(path.join(ROOT, "index.html"), (indexError, indexData) => {
         if (indexError) return sendJson(response, 404, { error: "Not found" });
-        response.writeHead(200, { "Content-Type": contentTypes[".html"] });
+        writeResponseHead(response, 200, { "Content-Type": contentTypes[".html"] });
         response.end(request.method === "HEAD" ? undefined : indexData);
       });
     }
 
     const ext = path.extname(filePath);
-    response.writeHead(200, {
+    writeResponseHead(response, 200, {
       "Content-Type": contentTypes[ext] || "application/octet-stream",
       "Cache-Control": ext === ".html" ? "no-store" : "public, max-age=300"
     });
@@ -1013,9 +1124,23 @@ function serveStatic(request, response) {
 }
 
 function sendJson(response, status, body, headers = {}) {
-  response.writeHead(status, {
+  writeResponseHead(response, status, {
     "Content-Type": "application/json; charset=utf-8",
     ...headers
   });
   response.end(JSON.stringify(body));
+}
+
+function writeResponseHead(response, status, headers = {}) {
+  response.writeHead(status, {
+    ...securityHeaders,
+    ...headers
+  });
+}
+
+function isBlockedStaticPath(pathname) {
+  if (pathname.startsWith("/data/")) return true;
+  if (pathname === "/.well-known/assetlinks.json") return false;
+  const segments = pathname.split("/").filter(Boolean);
+  return segments.some((segment) => segment.startsWith(".")) || segments.some((segment) => segment.toLowerCase().endsWith(".env"));
 }
