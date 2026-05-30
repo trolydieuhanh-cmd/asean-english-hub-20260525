@@ -356,6 +356,11 @@ button {
   background: var(--coral);
 }
 
+.btn-danger {
+  color: var(--white);
+  background: var(--rose);
+}
+
 .btn-good {
   color: var(--white);
   background: var(--green);

@@ -708,6 +708,7 @@ let activeView = "dashboard";
 let editingAccountId = null;
 let editingTemplateId = null;
 let editingLessonId = null;
+let editingNoticeId = null;
 let selectedVideoLessonId = null;
 let selectedChatContactId = null;
 let recordingState = null;
@@ -2617,6 +2618,8 @@ function renderNotifications() {
   const visibleNotices = state.notifications
     .filter((notice) => notificationVisibleForUser(notice, user))
     .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+  const editingNotice = editingNoticeId ? state.notifications.find((notice) => notice.id === editingNoticeId) : null;
+  if (editingNoticeId && !editingNotice) editingNoticeId = null;
 
   return `
     ${
@@ -2625,29 +2628,30 @@ function renderNotifications() {
           <section class="panel">
             <div class="panel-header">
               <div class="panel-title">
-                <h2>Tạo thông báo nhắc nhở</h2>
-                <p>Gửi thông báo cho toàn hệ thống, giáo viên hoặc học viên.</p>
+                <h2>${editingNotice ? "Sửa thông báo" : "Tạo thông báo nhắc nhở"}</h2>
+                <p>${editingNotice ? "Cập nhật tiêu đề, nội dung và nhóm người nhận của thông báo." : "Gửi thông báo cho toàn hệ thống, giáo viên hoặc học viên."}</p>
               </div>
             </div>
-            <form id="notification-form" class="form-grid">
+            <form id="notification-form" class="form-grid" data-notice-id="${safe(editingNotice?.id || "")}">
               <div class="field">
                 <label for="notice-audience">Người nhận</label>
                 <select class="select" id="notice-audience" name="audience" required>
-                  <option value="all">Tất cả</option>
-                  <option value="teacher">Giáo viên</option>
-                  <option value="student">Học viên</option>
+                  <option value="all" ${editingNotice?.audience === "all" ? "selected" : ""}>Tất cả</option>
+                  <option value="teacher" ${editingNotice?.audience === "teacher" ? "selected" : ""}>Giáo viên</option>
+                  <option value="student" ${editingNotice?.audience === "student" ? "selected" : ""}>Học viên</option>
                 </select>
               </div>
               <div class="field wide">
                 <label for="notice-title">Tiêu đề</label>
-                <input class="input" id="notice-title" name="title" required />
+                <input class="input" id="notice-title" name="title" value="${safe(editingNotice?.title || "")}" required />
               </div>
               <div class="field full">
                 <label for="notice-message">Nội dung</label>
-                <textarea class="textarea" id="notice-message" name="message" required></textarea>
+                <textarea class="textarea" id="notice-message" name="message" required>${safe(editingNotice?.message || "")}</textarea>
               </div>
               <div class="full button-row">
-                <button class="btn btn-primary" type="submit">${icon("send")} Gửi thông báo</button>
+                <button class="btn btn-primary" type="submit">${icon(editingNotice ? "save" : "send")} ${editingNotice ? "Lưu thông báo" : "Gửi thông báo"}</button>
+                ${editingNotice ? `<button class="btn btn-secondary" type="button" data-action="cancel-edit-notification">${icon("x")} Hủy sửa</button>` : ""}
               </div>
             </form>
           </section>
@@ -3448,11 +3452,22 @@ function renderTeacherCard(teacher) {
 }
 
 function renderNotice(notice) {
+  const user = currentAccount();
   return `
     <article class="notice">
       <div class="button-row" style="justify-content: space-between;">
         <h3>${safe(notice.title)}</h3>
-        <span class="badge">${safe(audienceLabel(notice.audience))}</span>
+        <div class="button-row">
+          <span class="badge">${safe(audienceLabel(notice.audience))}</span>
+          ${
+            user?.role === "admin"
+              ? `
+                <button class="btn btn-secondary btn-small" type="button" data-action="edit-notification" data-id="${safe(notice.id)}">${icon("edit-3")} Sửa</button>
+                <button class="btn btn-danger btn-small" type="button" data-action="delete-notification" data-id="${safe(notice.id)}">${icon("trash-2")} Xóa</button>
+              `
+              : ""
+          }
+        </div>
       </div>
       <p>${safe(notice.message)}</p>
       <div class="meta-subtitle">${safe(formatDateTime(notice.createdAt))}</div>
@@ -3511,6 +3526,24 @@ function handleClick(event) {
   if (action === "select-chat-contact") {
     selectedChatContactId = target.dataset.id || null;
     render();
+    return;
+  }
+
+  if (action === "edit-notification") {
+    if (currentAccount()?.role !== "admin") return;
+    editingNoticeId = target.dataset.id || null;
+    render();
+    return;
+  }
+
+  if (action === "cancel-edit-notification") {
+    editingNoticeId = null;
+    render();
+    return;
+  }
+
+  if (action === "delete-notification") {
+    deleteNotification(target.dataset.id);
     return;
   }
 
@@ -4573,16 +4606,44 @@ async function savePlacementTemplate(form) {
 
 async function createNotification(form) {
   const data = new FormData(form);
-  state.notifications.push({
-    id: makeId("notice"),
+  const noticeId = form.dataset.noticeId || editingNoticeId;
+  const existing = noticeId ? state.notifications.find((notice) => notice.id === noticeId) : null;
+  const nextData = {
     audience: String(data.get("audience")),
     title: String(data.get("title") || "").trim(),
-    message: String(data.get("message") || "").trim(),
-    createdBy: currentAccountId,
-    createdAt: new Date().toISOString()
-  });
-  await persistState("Đã gửi thông báo.");
-  form.reset();
+    message: String(data.get("message") || "").trim()
+  };
+  if (existing) {
+    Object.assign(existing, nextData, {
+      updatedBy: currentAccountId,
+      updatedAt: new Date().toISOString()
+    });
+    editingNoticeId = null;
+    await persistState("Đã cập nhật thông báo.");
+  } else {
+    state.notifications.push({
+      id: makeId("notice"),
+      ...nextData,
+      createdBy: currentAccountId,
+      createdAt: new Date().toISOString()
+    });
+    await persistState("Đã gửi thông báo.");
+    form.reset();
+  }
+  render();
+}
+
+async function deleteNotification(noticeId) {
+  if (currentAccount()?.role !== "admin") {
+    showToast("Chỉ admin được xóa thông báo.");
+    return;
+  }
+  const notice = state.notifications.find((item) => item.id === noticeId);
+  if (!notice) return;
+  if (!window.confirm(`Xóa thông báo "${notice.title}"?`)) return;
+  state.notifications = state.notifications.filter((item) => item.id !== noticeId);
+  if (editingNoticeId === noticeId) editingNoticeId = null;
+  await persistState("Đã xóa thông báo.");
   render();
 }
 
@@ -6514,5 +6575,5 @@ function safe(value) {
 
 function registerServiceWorker() {
   if (!("serviceWorker" in navigator) || !canUseServerApi()) return;
-  navigator.serviceWorker.register("service-worker.js?v=20260530-chat-schools").catch(() => {});
+  navigator.serviceWorker.register("service-worker.js?v=20260530-notice-edit").catch(() => {});
 }
