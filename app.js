@@ -712,6 +712,7 @@ let recordingState = null;
 let auditLog = [];
 let auditLogLoaded = false;
 let nexaAssistantMessages = [];
+let nexaRulesScrollTop = 0;
 let serverOnline = false;
 let toastTimer = null;
 let syncTimer = null;
@@ -727,6 +728,7 @@ async function init() {
   app.addEventListener("click", handleClick);
   app.addEventListener("change", handleChange);
   app.addEventListener("submit", handleSubmit);
+  app.addEventListener("scroll", handleScroll, true);
   window.addEventListener("beforeunload", markCurrentAccountOfflineOnUnload);
   currentAccountId = sessionStorage.getItem(SESSION_KEY);
   await restoreServerSession();
@@ -1337,6 +1339,7 @@ function renderLogin() {
   `;
   refreshIcons();
   applyLanguage();
+  restoreNexaRulesScroll();
 }
 
 function languageSelector(id, extraClass = "") {
@@ -3528,6 +3531,12 @@ function handleChange(event) {
   }
 }
 
+function handleScroll(event) {
+  if (event.target?.classList?.contains("nexa-rules-scroll")) {
+    nexaRulesScrollTop = event.target.scrollTop;
+  }
+}
+
 function handleSubmit(event) {
   if (event.target.id === "login-form") {
     event.preventDefault();
@@ -5377,6 +5386,7 @@ function resetNexaAssistantMessages() {
 
 function submitNexaAssistantQuestion(question) {
   if (!question) return;
+  rememberNexaRulesScroll();
   currentNexaAssistantMessages();
   nexaAssistantMessages.push({ from: "user", text: question, time: nowTime() });
   nexaAssistantMessages.push({ from: "ai", text: nexaAssistantAnswer(question), time: nowTime() });
@@ -5385,7 +5395,19 @@ function submitNexaAssistantQuestion(question) {
   window.setTimeout(() => {
     const chatWindow = document.querySelector(".nexa-chat-window");
     if (chatWindow) chatWindow.scrollTop = chatWindow.scrollHeight;
+    restoreNexaRulesScroll();
   }, 40);
+}
+
+function rememberNexaRulesScroll() {
+  const rulesScroll = document.querySelector(".nexa-rules-scroll");
+  if (rulesScroll) nexaRulesScrollTop = rulesScroll.scrollTop;
+}
+
+function restoreNexaRulesScroll() {
+  const rulesScroll = document.querySelector(".nexa-rules-scroll");
+  if (!rulesScroll) return;
+  rulesScroll.scrollTop = Math.min(nexaRulesScrollTop, Math.max(0, rulesScroll.scrollHeight - rulesScroll.clientHeight));
 }
 
 function nexaAssistantPromptGroups(role) {
@@ -5451,13 +5473,16 @@ function nexaAssistantPromptGroups(role) {
             prompts: [
               "Is studying English in the Philippines suitable for me?",
               "What is Sparta or Semi-Sparta learning?",
+              "Which English schools in the Philippines can I compare?",
               "Which course fits a beginner or weak English learner?",
               "Should I choose ESL, IELTS, TOEIC, or Business English?",
               "How should I choose an English school in the Philippines?",
               "What should I know about Philinter in Cebu?",
+              "What should I know about CPI, CIA, EV, Fella 2, and Blue Ocean?",
               "What is the estimated 4-week cost?",
               "What should I prepare before departure?",
               "What is the basic registration process?",
+              "If I decide to enroll, what should I do?",
               "Where can I follow MYB on Facebook or TikTok?"
             ]
           },
@@ -5528,13 +5553,16 @@ function nexaAssistantPromptGroups(role) {
           prompts: [
             "Du học tiếng Anh Philippines có phù hợp với em không?",
             "Mô hình Sparta và Semi-Sparta là gì?",
+            "Có những trường Anh ngữ Philippines nào để so sánh?",
             "Mất gốc tiếng Anh nên chọn khóa nào?",
             "Nên chọn ESL, IELTS, TOEIC hay Business English?",
             "Nên chọn trường Anh ngữ Philippines theo tiêu chí nào?",
             "Trường Philinter ở Cebu có gì nổi bật?",
+            "CPI, CIA, EV, Fella 2, Blue Ocean có gì khác nhau?",
             "Chi phí 4 tuần khoảng bao nhiêu?",
             "Trước khi khởi hành cần chuẩn bị gì?",
             "Quy trình đăng ký du học Philippines cơ bản thế nào?",
+            "Nếu em chốt học thì làm gì?",
             "Theo dõi MYB trên Facebook hoặc TikTok ở đâu?"
           ]
         },
@@ -5705,6 +5733,21 @@ function isStudyAbroadQuestion(text) {
     "esl",
     "business english",
     "philinter",
+    "cpi",
+    "cebu pelis",
+    "cia",
+    "mactan resort",
+    "ev",
+    "ev academy",
+    "fella",
+    "fella 2",
+    "blue ocean",
+    "cebu blue ocean",
+    "danh sach truong",
+    "cac truong",
+    "so sanh truong",
+    "truong nao",
+    "truong anh ngu",
     "mat goc",
     "giao tiep",
     "khoa nao",
@@ -5755,6 +5798,19 @@ function isAdminOnlyQuestion(text) {
 }
 
 function nexaStudyAbroadAnswer(text, en) {
+  if (matchesAny(text, ["chot hoc", "chot truong", "muon hoc", "muon dang ky", "dang ky ngay", "giu cho", "dat coc", "enroll", "book a slot", "decide to enroll", "confirm school", "i choose"])) {
+    return en
+      ? "If you decide to enroll, please contact admin directly. Nexa AI can explain options, but admin must confirm the school, latest tuition, promotion, room availability, start date, required documents, payment method, and pickup instructions before any deposit or tuition payment."
+      : "Nếu học viên chốt học, vui lòng liên hệ trực tiếp admin. Nexa AI chỉ tư vấn định hướng; admin phải xác nhận trường, học phí mới nhất, ưu đãi, tình trạng phòng còn chỗ, ngày nhập học, giấy tờ cần chuẩn bị, phương thức thanh toán và hướng dẫn đón sân bay trước khi đặt cọc hoặc thanh toán học phí.";
+  }
+
+  if (matchesAny(text, ["danh sach truong", "cac truong", "so sanh truong", "truong anh ngu", "truong nao", "school list", "compare schools", "english schools"])) {
+    return nexaPhilippinesSchoolListAnswer(en);
+  }
+
+  const schoolAnswer = nexaSpecificSchoolAnswer(text, en);
+  if (schoolAnswer) return schoolAnswer;
+
   if (matchesAny(text, ["facebook", "fanpage", "tiktok", "instagram", "myb", "english myb", "lien he", "contact", "zalo"])) {
     return en
       ? "MYB public pages list these official contact channels for Philippines English-study advice: Fanpage English MYB Education, TikTok duhoc.english.myb, Instagram English.MYB.Education, email English.MYB.Education@gmail.com, and phone/Zalo/Telegram 090 246 4413 or 037 449 0866. Use those channels to confirm the latest tuition, promotions, school availability, and departure instructions."
@@ -5817,6 +5873,65 @@ function nexaStudyAbroadAnswer(text, en) {
   return en
     ? "For Philippines English-study guidance, I can help students clarify goals, compare Sparta/Semi-Sparta learning styles, choose school criteria, estimate basic cost, and understand the registration flow. This guidance is based on public MYB/Asean Vietnam content and should be confirmed with admin or MYB before payment."
     : "Với du học tiếng Anh Philippines, tôi có thể giúp học viên xác định mục tiêu, so sánh Sparta/Semi-Sparta, chọn tiêu chí trường, nắm chi phí tham khảo và hiểu quy trình đăng ký cơ bản. Nội dung này dựa trên thông tin công khai của MYB/Asean Việt Nam và cần xác nhận lại với admin hoặc MYB trước khi thanh toán.";
+}
+
+function nexaPhilippinesSchoolListAnswer(en) {
+  if (en) {
+    return [
+      "Reference Philippines English schools from public MYB/Asean Vietnam and related public school pages:",
+      "1. Philinter, Cebu/Lapu-Lapu: near Cebu airport, CEFR-based level evaluation, TESDA/IDP-related profile, courses include Junior ESL, General ESL, Intensive ESL, IPS, Business English, TOEIC, IELTS, and Pronunciation.",
+      "2. CPI, Cebu: hotel/resort-style facilities, TESDA-recognized profile, courses include ESL, IELTS, TOEIC, TOEFL, Junior, Business English, Rapid Progress 30/60, and IELTS Guarantee.",
+      "3. CIA Mactan Resort, Cebu: resort-style campus on Mactan, Semi-Sparta orientation, strong ESL/IELTS/Business options, suitable for learners who want study plus comfortable facilities.",
+      "4. EV Academy, Cebu: Sparta and Semi-Sparta options, EOP policy, IELTS test-center positioning, modern facilities, suitable for beginner to intermediate learners who want discipline.",
+      "5. English Fella 2, Cebu: long-standing campus, Classic/J-Sparta options, IELTS/TOEIC/TOEFL/Business/Junior/Guardian courses, quiet campus and IDP IELTS test-center profile.",
+      "6. Cebu Blue Ocean Academy, Cebu/Lapu-Lapu: resort-style setting, ESL/TOEIC/IELTS/Business/Family options, useful for students who want short-term improvement with comfortable campus life.",
+      "If you choose a school or want to enroll, contact admin so tuition, room availability, start date, promotion, documents, and payment are confirmed before any deposit."
+    ].join("\n");
+  }
+  return [
+    "Danh sách trường Anh ngữ Philippines tham khảo từ dữ liệu công khai MYB/Asean Việt Nam và các trang trường công khai:",
+    "1. Philinter, Cebu/Lapu-Lapu: gần sân bay Cebu, đánh giá trình độ theo CEFR, hồ sơ TESDA/IDP, có Junior ESL, General ESL, Intensive ESL, IPS, Business English, TOEIC, IELTS và Pronunciation.",
+    "2. CPI, Cebu: cơ sở vật chất kiểu khách sạn/resort, hồ sơ TESDA, có ESL, IELTS, TOEIC, TOEFL, Junior, Business English, Rapid Progress 30/60 và IELTS Guarantee.",
+    "3. CIA Mactan Resort, Cebu: campus kiểu resort tại Mactan, định hướng Semi-Sparta, mạnh về ESL/IELTS/Business, phù hợp học viên muốn học nghiêm túc nhưng tiện nghi sinh hoạt tốt.",
+    "4. EV Academy, Cebu: có lựa chọn Sparta và Semi-Sparta, áp dụng EOP, định vị là trung tâm thi IELTS, cơ sở hiện đại, phù hợp học viên cơ bản đến trung cấp cần kỷ luật.",
+    "5. English Fella 2, Cebu: trường lâu đời, mô hình Classic/J-Sparta, có IELTS/TOEIC/TOEFL/Business/Junior/Guardian, campus yên tĩnh và hồ sơ trung tâm thi IELTS IDP.",
+    "6. Cebu Blue Ocean Academy, Cebu/Lapu-Lapu: môi trường resort, có ESL/TOEIC/IELTS/Business/Family, phù hợp học viên muốn cải thiện ngắn hạn trong môi trường sinh hoạt thoải mái.",
+    "Nếu học viên chọn trường hoặc muốn đăng ký học, hãy liên hệ admin để xác nhận học phí, phòng còn chỗ, ngày nhập học, ưu đãi, giấy tờ và phương thức thanh toán trước khi đặt cọc."
+  ].join("\n");
+}
+
+function nexaSpecificSchoolAnswer(text, en) {
+  if (matchesAny(text, ["philinter"])) {
+    return en
+      ? "Philinter is in Cebu/Lapu-Lapu near Cebu airport. Public MYB content describes CEFR-based level evaluation, TESDA/IDP-related positioning, nationality balance, 1:1 and group classrooms, dormitory options, meals, health support, and courses including Junior ESL, General ESL, Intensive ESL, IPS, Business English, TOEIC, IELTS, and Pronunciation. It is a good reference for students who want structured placement and many course tracks."
+      : "Philinter nằm tại Cebu/Lapu-Lapu, gần sân bay Cebu. Nội dung MYB công khai mô tả trường có đánh giá trình độ theo CEFR, hồ sơ TESDA/IDP, cân bằng quốc tịch, lớp 1:1 và lớp nhóm, lựa chọn ký túc xá, bữa ăn, hỗ trợ y tế, các khóa Junior ESL, General ESL, Intensive ESL, IPS, Business English, TOEIC, IELTS và Pronunciation. Đây là lựa chọn đáng tham khảo nếu học viên muốn lộ trình rõ và nhiều khóa học.";
+  }
+  if (matchesAny(text, ["cpi", "cebu pelis"])) {
+    return en
+      ? "CPI, Cebu Pelis Institute, is described as a Cebu school with high-end hotel/resort-style facilities, about 250-student scale, TESDA profile, Filipino teachers, 1:1/group classrooms, library/self-study areas, pool, gym, buffet dining, and courses including ESL, IELTS, TOEIC, TOEFL, Junior, Business English, Rapid Progress 30/60, and IELTS Guarantee. It fits students who want strong facilities and intensive academic structure."
+      : "CPI, Cebu Pelis Institute, được mô tả là trường tại Cebu có cơ sở vật chất cao cấp kiểu khách sạn/resort, quy mô khoảng 250 học viên, hồ sơ TESDA, giáo viên Philippines, lớp 1:1/lớp nhóm, thư viện/khu tự học, hồ bơi, gym, nhà ăn buffet, các khóa ESL, IELTS, TOEIC, TOEFL, Junior, Business English, Rapid Progress 30/60 và IELTS Guarantee. Phù hợp học viên muốn tiện nghi tốt và chương trình học cường độ cao.";
+  }
+  if (matchesAny(text, ["cia", "mactan resort"])) {
+    return en
+      ? "CIA Mactan Resort is a Cebu/Mactan resort-style campus. Public sources describe Semi-Sparta discipline, strong ESL/IELTS/Business options, daily vocabulary/grammar checks, IDP IELTS test-center positioning, and facilities suitable for adults, families, and junior/summer programs. Confirm current courses, tuition, and rooms with admin before choosing."
+      : "CIA Mactan Resort là campus kiểu resort tại Cebu/Mactan. Nguồn công khai mô tả trường theo định hướng Semi-Sparta, mạnh về ESL/IELTS/Business, có kiểm tra từ vựng/ngữ pháp hằng ngày, hồ sơ trung tâm thi IELTS IDP và tiện ích phù hợp người lớn, gia đình, chương trình trẻ em/trại hè. Cần xác nhận khóa, học phí và phòng với admin trước khi chọn.";
+  }
+  if (matchesAny(text, ["ev", "ev academy"])) {
+    return en
+      ? "EV Academy in Cebu is described as offering Sparta and Semi-Sparta choices, EOP, modern facilities, internal or external dormitory options, IELTS test-center positioning, and a profile suitable for beginner to intermediate students. It is useful for learners who want discipline but still need some flexibility depending on the selected program."
+      : "EV Academy tại Cebu được mô tả có lựa chọn Sparta và Semi-Sparta, áp dụng EOP, cơ sở vật chất hiện đại, có lựa chọn ký túc xá trong trường hoặc căn hộ ngoài trường, hồ sơ trung tâm thi IELTS và phù hợp học viên cơ bản đến trung cấp. Trường phù hợp học viên cần kỷ luật nhưng vẫn muốn mức linh hoạt tùy chương trình.";
+  }
+  if (matchesAny(text, ["fella", "fella 2", "english fella"])) {
+    return en
+      ? "English Fella 2 is a long-standing Cebu campus with Classic and J-Sparta options. Public sources describe ESL, TOEIC, TOEFL, IELTS, Business, Junior, and Guardian courses, a quiet Talamban location, resort-style campus, pool, sports facilities, and IDP IELTS test-center profile. It fits students who want a stable study environment and IELTS/communication focus."
+      : "English Fella 2 là campus lâu đời tại Cebu, có lựa chọn Classic và J-Sparta. Nguồn công khai mô tả trường có ESL, TOEIC, TOEFL, IELTS, Business, Junior, Guardian, vị trí Talamban yên tĩnh, campus kiểu resort, hồ bơi, khu thể thao và hồ sơ trung tâm thi IELTS IDP. Phù hợp học viên muốn môi trường ổn định, tập trung IELTS hoặc giao tiếp.";
+  }
+  if (matchesAny(text, ["blue ocean", "cebu blue ocean"])) {
+    return en
+      ? "Cebu Blue Ocean Academy is described as a Lapu-Lapu/Cebu resort-style English school, with ESL, TOEIC, IELTS, Business, and Family options. Public sources highlight resort facilities, leisure activities, international student mix, and teacher training. It is useful for students who want short-term improvement with comfortable living and resort-style surroundings."
+      : "Cebu Blue Ocean Academy được mô tả là trường Anh ngữ kiểu resort tại Lapu-Lapu/Cebu, có ESL, TOEIC, IELTS, Business và Family. Nguồn công khai nhấn mạnh tiện ích resort, hoạt động giải trí, môi trường học viên đa quốc tịch và đào tạo giáo viên. Phù hợp học viên muốn cải thiện ngắn hạn trong môi trường sống thoải mái.";
+  }
+  return "";
 }
 
 function nexaVisibleScopeText(role) {
@@ -6158,5 +6273,5 @@ function safe(value) {
 
 function registerServiceWorker() {
   if (!("serviceWorker" in navigator) || !canUseServerApi()) return;
-  navigator.serviceWorker.register("service-worker.js?v=20260530-nexa-ai-scroll").catch(() => {});
+  navigator.serviceWorker.register("service-worker.js?v=20260530-nexa-ai-schools").catch(() => {});
 }
