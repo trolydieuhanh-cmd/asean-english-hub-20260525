@@ -688,6 +688,7 @@ function mergeLimitedState(current, incoming, account) {
     next.callState.startedAt = next.callState.activeLessonId ? new Date().toISOString() : null;
   }
 
+  next.chatThreads = mergeChatThreads(next.chatThreads || [], incoming.chatThreads || [], account, next.accounts || [], next.lessons || []);
   return next;
 }
 
@@ -747,7 +748,7 @@ function summarizeStateChanges(previous, next, account) {
     role: account.role,
     changedCollections: []
   };
-  for (const key of ["accounts", "teachers", "students", "lessons", "notifications", "placementTemplates", "placementTests"]) {
+  for (const key of ["accounts", "teachers", "students", "lessons", "notifications", "chatThreads", "placementTemplates", "placementTests"]) {
     const beforeItems = Array.isArray(previous[key]) ? previous[key] : [];
     const afterItems = Array.isArray(next[key]) ? next[key] : [];
     const beforeIds = new Set(beforeItems.map((item) => item.id).filter(Boolean));
@@ -788,6 +789,74 @@ function uniqueIds(ids) {
   return [...new Set((ids || []).filter(Boolean))];
 }
 
+function mergeChatThreads(currentThreads, incomingThreads, account, accounts, lessons) {
+  const threads = Array.isArray(currentThreads) ? currentThreads : [];
+  const byId = new Map(threads.map((thread) => [thread.id, thread]));
+  for (const incoming of Array.isArray(incomingThreads) ? incomingThreads : []) {
+    const participantIds = uniqueIds((incoming.participantIds || []).map(String)).sort();
+    if (!participantIds.includes(account.id) || participantIds.length !== 2) continue;
+    if (!participantIds.every((id) => id === account.id || canAccountChatWith(account, accounts.find((item) => item.id === id), lessons))) continue;
+    const threadId = incoming.id || `chat-${participantIds.join("--")}`;
+    let thread = byId.get(threadId) || threads.find((item) => sameParticipants(item.participantIds, participantIds));
+    if (!thread) {
+      thread = {
+        id: threadId,
+        participantIds,
+        createdAt: incoming.createdAt || new Date().toISOString(),
+        updatedAt: incoming.updatedAt || new Date().toISOString(),
+        messages: []
+      };
+      threads.push(thread);
+      byId.set(thread.id, thread);
+    }
+    thread.participantIds = participantIds;
+    thread.messages = Array.isArray(thread.messages) ? thread.messages : [];
+    thread.messages.forEach((message) => {
+      message.readBy = Array.isArray(message.readBy) ? message.readBy : [];
+    });
+    const existingMessages = new Map(thread.messages.map((message) => [message.id, message]));
+    for (const incomingMessage of Array.isArray(incoming.messages) ? incoming.messages : []) {
+      const messageId = String(incomingMessage.id || "");
+      const existing = existingMessages.get(messageId);
+      if (existing) {
+        if ((incomingMessage.readBy || []).includes(account.id) && !existing.readBy.includes(account.id)) existing.readBy.push(account.id);
+        continue;
+      }
+      if (incomingMessage.senderId !== account.id) continue;
+      const text = String(incomingMessage.text || "").trim().slice(0, 1000);
+      if (!messageId || !text) continue;
+      thread.messages.push({
+        id: messageId,
+        senderId: account.id,
+        text,
+        createdAt: incomingMessage.createdAt || new Date().toISOString(),
+        readBy: uniqueIds([account.id, ...((incomingMessage.readBy || []).filter((id) => id === account.id))])
+      });
+    }
+    thread.updatedAt = thread.messages.length ? thread.messages[thread.messages.length - 1].createdAt : thread.updatedAt;
+  }
+  return threads;
+}
+
+function canAccountChatWith(account, contact, lessons) {
+  if (!account || !contact || account.id === contact.id || contact.status !== "active") return false;
+  if (account.role === "admin") return ["admin", "teacher", "student"].includes(contact.role);
+  if (contact.role === "admin") return true;
+  if (account.role === "teacher" && contact.role === "student") {
+    return lessons.some((lesson) => lesson.teacherId === account.profileId && lesson.studentId === contact.profileId);
+  }
+  if (account.role === "student" && contact.role === "teacher") {
+    return lessons.some((lesson) => lesson.studentId === account.profileId && lesson.teacherId === contact.profileId);
+  }
+  return false;
+}
+
+function sameParticipants(left, right) {
+  const leftIds = uniqueIds(left || []).sort();
+  const rightIds = uniqueIds(right || []).sort();
+  return leftIds.length === rightIds.length && leftIds.every((id, index) => id === rightIds[index]);
+}
+
 function sanitizeStateForAccount(state, account) {
   const safeState = clone(state);
   safeState.accounts = (safeState.accounts || []).map(sanitizeAccount);
@@ -804,7 +873,13 @@ function sanitizeStateForAccount(state, account) {
   if (account.role === "teacher") teacherIds.add(account.profileId);
   if (account.role === "student") studentIds.add(account.profileId);
 
-  safeState.accounts = safeState.accounts.filter((item) => item.id === account.id);
+  safeState.chatThreads = (safeState.chatThreads || []).filter((thread) => (thread.participantIds || []).includes(account.id));
+  const visibleAccountIds = new Set([account.id]);
+  safeState.accounts.filter((item) => item.role === "admin").forEach((item) => visibleAccountIds.add(item.id));
+  safeState.accounts.filter((item) => item.role === "teacher" && teacherIds.has(item.profileId)).forEach((item) => visibleAccountIds.add(item.id));
+  safeState.accounts.filter((item) => item.role === "student" && studentIds.has(item.profileId)).forEach((item) => visibleAccountIds.add(item.id));
+  safeState.chatThreads.forEach((thread) => (thread.participantIds || []).forEach((id) => visibleAccountIds.add(id)));
+  safeState.accounts = safeState.accounts.filter((item) => visibleAccountIds.has(item.id));
   safeState.teachers = (safeState.teachers || []).filter((teacher) => teacherIds.has(teacher.id));
   safeState.students = (safeState.students || []).filter((student) => studentIds.has(student.id));
   safeState.lessons = lessonScope;

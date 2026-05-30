@@ -17,8 +17,9 @@ const EN_TRANSLATIONS = {
   "English": "English",
   "Ngôn ngữ": "Language",
   "Nexa AI": "Nexa AI",
+  "Nexa AI - Tư vấn du học": "Nexa AI - Study Abroad Advisor",
   "Trợ lý Nexa AI": "Nexa AI Assistant",
-  "Hỏi Nexa AI": "Ask Nexa AI",
+  "Hỏi Nexa AI - Tư vấn du học": "Ask Nexa AI - Study Abroad Advisor",
   "Nhập câu hỏi về cách sử dụng phần mềm...": "Enter a question about how to use this software...",
   "Nexa AI chỉ hướng dẫn sử dụng phần mềm này và không trả lời nội dung ngoài phạm vi.": "Nexa AI only guides users on this software and does not answer out-of-scope content.",
   "Bản quyền thuộc về Công ty cổ phần Asean Holding.": "Copyright belongs to Asean Holding Joint Stock Company.",
@@ -708,6 +709,7 @@ let editingAccountId = null;
 let editingTemplateId = null;
 let editingLessonId = null;
 let selectedVideoLessonId = null;
+let selectedChatContactId = null;
 let recordingState = null;
 let auditLog = [];
 let auditLogLoaded = false;
@@ -852,6 +854,7 @@ function normalizeState(input) {
   normalized.students = Array.isArray(normalized.students) ? normalized.students : [];
   normalized.lessons = Array.isArray(normalized.lessons) ? normalized.lessons : [];
   normalized.notifications = Array.isArray(normalized.notifications) ? normalized.notifications : [];
+  normalized.chatThreads = Array.isArray(normalized.chatThreads) ? normalized.chatThreads : [];
   normalized.placementTemplates = Array.isArray(normalized.placementTemplates) && normalized.placementTemplates.length ? normalized.placementTemplates : clonePlacementTemplates();
   normalized.placementTests = Array.isArray(normalized.placementTests) ? normalized.placementTests : [];
   normalized.callState = normalizeCallState(normalized.callState, normalized.lessons);
@@ -859,6 +862,7 @@ function normalizeState(input) {
   normalized.settings.defaultTeacherRate = Number(normalized.settings.defaultTeacherRate || 8);
   normalized.settings.defaultStudentRate = Number(normalized.settings.defaultStudentRate || 14);
   normalized.accounts.forEach(normalizeAccountPresence);
+  normalized.chatThreads.forEach(normalizeChatThread);
   if (!normalized.placementTests.length && normalized.students.length) {
     normalized.placementTests = samplePlacementTests(normalized.students);
   }
@@ -895,6 +899,21 @@ function normalizeCallState(callState, lessons = []) {
     startedBy: existing.startedBy || null,
     startedAt: existing.startedAt || null
   };
+}
+
+function normalizeChatThread(thread) {
+  thread.id = String(thread.id || makeId("chat"));
+  thread.participantIds = uniqueIds(Array.isArray(thread.participantIds) ? thread.participantIds.map(String) : []);
+  thread.createdAt = thread.createdAt || new Date().toISOString();
+  thread.updatedAt = thread.updatedAt || thread.createdAt;
+  thread.messages = Array.isArray(thread.messages) ? thread.messages : [];
+  thread.messages.forEach((message) => {
+    message.id = String(message.id || makeId("msg"));
+    message.senderId = String(message.senderId || "");
+    message.text = String(message.text || "");
+    message.createdAt = message.createdAt || thread.createdAt;
+    message.readBy = uniqueIds(Array.isArray(message.readBy) ? message.readBy.map(String) : []);
+  });
 }
 
 function makeSeedState() {
@@ -1449,6 +1468,10 @@ function navBadge(viewId) {
     const count = visibleLessonsForAccount(state, user).filter((lesson) => lesson.status === "scheduled").length;
     return count ? `<span class="nav-badge muted">${safe(String(count))}</span>` : "";
   }
+  if (viewId === "messages") {
+    const count = unreadChatCountForCurrentUser();
+    return count ? `<span class="nav-badge">${safe(String(count))}</span>` : "";
+  }
   return "";
 }
 
@@ -1505,6 +1528,7 @@ function renderView() {
     if (activeView === "finance") return renderFinanceAdmin();
     if (activeView === "placement") return renderPlacementTests();
     if (activeView === "notifications") return renderNotifications();
+    if (activeView === "messages") return renderMessagesCenter();
     if (activeView === "video") return renderVideoCenter();
     if (activeView === "audit") return renderAuditAdmin();
     if (activeView === "settings") return renderSettings();
@@ -1515,6 +1539,7 @@ function renderView() {
     if (activeView === "schedule") return renderRoleSchedule("teacher");
     if (activeView === "finance") return renderTeacherFinance();
     if (activeView === "notifications") return renderNotifications();
+    if (activeView === "messages") return renderMessagesCenter();
     if (activeView === "video") return renderVideoCenter();
     if (activeView === "assistant") return renderNexaAssistant();
     if (activeView === "profile") return renderProfile();
@@ -1526,6 +1551,7 @@ function renderView() {
     if (activeView === "payments") return renderStudentPayments();
     if (activeView === "placement") return renderPlacementTests();
     if (activeView === "notifications") return renderNotifications();
+    if (activeView === "messages") return renderMessagesCenter();
     if (activeView === "video") return renderVideoCenter();
     if (activeView === "assistant") return renderNexaAssistant();
     if (activeView === "profile") return renderProfile();
@@ -2800,7 +2826,7 @@ function renderNexaAssistant() {
       <div class="panel nexa-assistant-main">
         <div class="panel-header">
           <div class="panel-title">
-            <h2>Trợ lý Nexa AI</h2>
+            <h2>Nexa AI - Tư vấn du học</h2>
             <p>Nexa AI chỉ hướng dẫn sử dụng phần mềm này và không trả lời nội dung ngoài phạm vi.</p>
           </div>
           <button class="btn btn-secondary" type="button" data-action="clear-nexa-ai">${icon("trash-2")} Xóa hội thoại</button>
@@ -2810,7 +2836,7 @@ function renderNexaAssistant() {
         </div>
         <form id="nexa-assistant-form" class="nexa-chat-form">
           <input class="input" name="question" autocomplete="off" placeholder="Nhập câu hỏi về cách sử dụng phần mềm..." required />
-          <button class="btn btn-primary" type="submit">${icon("send")} Hỏi Nexa AI</button>
+          <button class="btn btn-primary" type="submit">${icon("send")} Hỏi Nexa AI - Tư vấn du học</button>
         </form>
       </div>
       <aside class="panel nexa-rules-panel">
@@ -2846,9 +2872,98 @@ function renderNexaAssistantMessage(message) {
   return `
     <article class="nexa-message ${message.from === "user" ? "from-user" : "from-ai"}">
       <div class="nexa-bubble">
-        <strong>${message.from === "user" ? safe(currentAccount()?.name || "Bạn") : "Nexa AI"}</strong>
+        <strong>${message.from === "user" ? safe(currentAccount()?.name || "Bạn") : "Nexa AI - Tư vấn du học"}</strong>
         <p>${safe(message.text)}</p>
         <small>${safe(message.time || "")}</small>
+      </div>
+    </article>
+  `;
+}
+
+function renderMessagesCenter() {
+  const user = currentAccount();
+  const contacts = chatContactsForCurrentUser();
+  if (!contacts.length) {
+    return `
+      <section class="panel">
+        <div class="panel-title">
+          <h2>Tin nhắn nội bộ</h2>
+          <p>Chưa có tài khoản phù hợp để nhắn tin.</p>
+        </div>
+      </section>
+    `;
+  }
+  if (!selectedChatContactId || !contacts.some((contact) => contact.id === selectedChatContactId)) {
+    selectedChatContactId = contacts[0].id;
+  }
+  const contact = contacts.find((item) => item.id === selectedChatContactId) || contacts[0];
+  const thread = ensureChatThread(contact.id);
+  const changedRead = markChatThreadRead(thread, user.id);
+  if (changedRead) persistState();
+  return `
+    <section class="messages-layout">
+      <aside class="panel messages-contact-panel">
+        <div class="panel-title">
+          <h2>Tin nhắn</h2>
+          <p>Chat nội bộ giữa admin, giáo viên và học viên.</p>
+        </div>
+        <div class="messages-contact-list">
+          ${contacts.map((item) => renderChatContact(item)).join("")}
+        </div>
+      </aside>
+      <div class="panel messages-chat-panel">
+        <div class="messages-chat-head">
+          <div class="person-row">
+            ${brandedAvatar(contact.name, profileColor(contact), "avatar-small")}
+            <div>
+              <h2>${safe(contact.name)}</h2>
+              <div class="meta-subtitle">${safe(roleLabel(contact.role))} - ${safe(contact.email || "")}</div>
+            </div>
+          </div>
+          ${accountPresenceBadge(contact)}
+        </div>
+        <div class="messages-thread" aria-live="polite">
+          ${
+            thread.messages.length
+              ? thread.messages.map((message) => renderChatMessage(message, user.id)).join("")
+              : `<div class="empty">Chưa có tin nhắn. Hãy gửi lời chào hoặc nội dung cần trao đổi.</div>`
+          }
+        </div>
+        <form id="chat-message-form" class="messages-form">
+          <input type="hidden" name="recipientId" value="${safe(contact.id)}" />
+          <input class="input" name="message" autocomplete="off" maxlength="1000" placeholder="Nhập tin nhắn..." required />
+          <button class="btn btn-primary" type="submit">${icon("send")} Gửi</button>
+        </form>
+      </div>
+    </section>
+  `;
+}
+
+function renderChatContact(contact) {
+  const thread = chatThreadForParticipants(currentAccountId, contact.id);
+  const lastMessage = thread?.messages?.length ? thread.messages[thread.messages.length - 1] : null;
+  const unread = chatUnreadCountForContact(contact.id);
+  return `
+    <button class="message-contact ${contact.id === selectedChatContactId ? "active" : ""}" type="button" data-action="select-chat-contact" data-id="${safe(contact.id)}">
+      ${brandedAvatar(contact.name, profileColor(contact), "avatar-small")}
+      <span>
+        <strong>${safe(contact.name)}</strong>
+        <small>${safe(lastMessage?.text || roleLabel(contact.role))}</small>
+      </span>
+      ${unread ? `<em>${safe(String(unread))}</em>` : ""}
+    </button>
+  `;
+}
+
+function renderChatMessage(message, currentId) {
+  const sender = state.accounts.find((account) => account.id === message.senderId);
+  const mine = message.senderId === currentId;
+  return `
+    <article class="chat-message ${mine ? "mine" : ""}">
+      <div class="chat-bubble">
+        <strong>${safe(mine ? "Bạn" : sender?.name || "Tài khoản")}</strong>
+        <p>${safe(message.text)}</p>
+        <small>${safe(formatDateTime(message.createdAt))}</small>
       </div>
     </article>
   `;
@@ -3393,6 +3508,12 @@ function handleClick(event) {
     return;
   }
 
+  if (action === "select-chat-contact") {
+    selectedChatContactId = target.dataset.id || null;
+    render();
+    return;
+  }
+
   if (action === "logout") {
     logout();
     return;
@@ -3561,6 +3682,12 @@ function handleSubmit(event) {
     const question = String(new FormData(event.target).get("question") || "").trim();
     submitNexaAssistantQuestion(question);
     event.target.reset();
+    return;
+  }
+
+  if (currentAccount() && event.target.id === "chat-message-form") {
+    event.preventDefault();
+    sendChatMessage(event.target);
     return;
   }
 
@@ -4703,6 +4830,7 @@ function navItems(role) {
     dashboard: { id: "dashboard", label: "Tổng quan", icon: "layout-dashboard" },
     schedule: { id: "schedule", label: "Lịch học", icon: "calendar-days" },
     notifications: { id: "notifications", label: "Thông báo", icon: "bell" },
+    messages: { id: "messages", label: "Tin nhắn", icon: "message-circle" },
     video: { id: "video", label: "Video call", icon: "video" },
     profile: { id: "profile", label: "Hồ sơ", icon: "id-card" }
   };
@@ -4715,6 +4843,7 @@ function navItems(role) {
       { id: "finance", label: "Tài chính", icon: "wallet" },
       { id: "placement", label: "Test đầu vào", icon: "clipboard-check" },
       common.notifications,
+      common.messages,
       common.video,
       { id: "audit", label: "Nhật ký", icon: "shield-check" },
       { id: "settings", label: "Cài đặt", icon: "settings" }
@@ -4727,8 +4856,9 @@ function navItems(role) {
       common.schedule,
       { id: "finance", label: "Tiền dạy", icon: "wallet" },
       common.notifications,
+      common.messages,
       common.video,
-      { id: "assistant", label: "Nexa AI", icon: "bot" },
+      { id: "assistant", label: "Nexa AI - Tư vấn du học", icon: "bot" },
       common.profile
     ];
   }
@@ -4739,8 +4869,9 @@ function navItems(role) {
     { id: "payments", label: "Học phí", icon: "receipt" },
     { id: "placement", label: "Test đầu vào", icon: "clipboard-check" },
     common.notifications,
+    common.messages,
     common.video,
-    { id: "assistant", label: "Nexa AI", icon: "bot" },
+    { id: "assistant", label: "Nexa AI - Tư vấn du học", icon: "bot" },
     common.profile
   ];
 }
@@ -4758,8 +4889,9 @@ function viewTitle(view, role) {
     payments: "Học phí",
     placement: "Test đầu vào",
     notifications: "Thông báo nhắc nhở",
+    messages: "Tin nhắn nội bộ",
     video: "Trung tâm video call",
-    assistant: "Trợ lý Nexa AI",
+    assistant: "Nexa AI - Tư vấn du học",
     audit: "Nhật ký bảo mật",
     settings: "Cài đặt hệ thống",
     profile: "Hồ sơ"
@@ -4798,6 +4930,115 @@ function accountPresenceBadge(account) {
       <div class="meta-subtitle">${safe(time ? formatDateTime(time) : "Chưa có hoạt động")}</div>
     </div>
   `;
+}
+
+function chatContactsForCurrentUser() {
+  const user = currentAccount();
+  if (!user) return [];
+  return state.accounts
+    .filter((account) => account.id !== user.id && account.status === "active" && canChatWithAccount(user, account))
+    .sort((left, right) => {
+      const roleOrder = { admin: 0, teacher: 1, student: 2 };
+      return (roleOrder[left.role] ?? 9) - (roleOrder[right.role] ?? 9) || String(left.name).localeCompare(String(right.name));
+    });
+}
+
+function canChatWithAccount(user, contact) {
+  if (!user || !contact || user.id === contact.id) return false;
+  if (user.role === "admin") return ["admin", "teacher", "student"].includes(contact.role);
+  if (contact.role === "admin") return true;
+  if (user.role === "teacher" && contact.role === "student") {
+    return state.lessons.some((lesson) => lesson.teacherId === user.profileId && lesson.studentId === contact.profileId);
+  }
+  if (user.role === "student" && contact.role === "teacher") {
+    return state.lessons.some((lesson) => lesson.studentId === user.profileId && lesson.teacherId === contact.profileId);
+  }
+  return false;
+}
+
+function chatThreadIdForParticipants(leftId, rightId) {
+  return `chat-${[leftId, rightId].filter(Boolean).sort().join("--")}`;
+}
+
+function chatThreadForParticipants(leftId, rightId) {
+  const id = chatThreadIdForParticipants(leftId, rightId);
+  return state.chatThreads.find((thread) => thread.id === id || (thread.participantIds.includes(leftId) && thread.participantIds.includes(rightId)));
+}
+
+function ensureChatThread(contactId) {
+  state.chatThreads = Array.isArray(state.chatThreads) ? state.chatThreads : [];
+  let thread = chatThreadForParticipants(currentAccountId, contactId);
+  if (!thread) {
+    const now = new Date().toISOString();
+    thread = {
+      id: chatThreadIdForParticipants(currentAccountId, contactId),
+      participantIds: [currentAccountId, contactId].sort(),
+      createdAt: now,
+      updatedAt: now,
+      messages: []
+    };
+    state.chatThreads.push(thread);
+  }
+  normalizeChatThread(thread);
+  return thread;
+}
+
+async function sendChatMessage(form) {
+  const user = currentAccount();
+  const data = new FormData(form);
+  const recipientId = String(data.get("recipientId") || selectedChatContactId || "");
+  const text = String(data.get("message") || "").trim();
+  const contact = state.accounts.find((account) => account.id === recipientId);
+  if (!user || !contact || !text || !canChatWithAccount(user, contact)) {
+    showToast("Không thể gửi tin nhắn đến tài khoản này.");
+    return;
+  }
+  const thread = ensureChatThread(contact.id);
+  const now = new Date().toISOString();
+  thread.messages.push({
+    id: makeId("msg"),
+    senderId: user.id,
+    text: text.slice(0, 1000),
+    createdAt: now,
+    readBy: [user.id]
+  });
+  thread.updatedAt = now;
+  selectedChatContactId = contact.id;
+  await persistState();
+  form.reset();
+  render();
+  window.setTimeout(() => {
+    const threadBox = document.querySelector(".messages-thread");
+    if (threadBox) threadBox.scrollTop = threadBox.scrollHeight;
+  }, 40);
+}
+
+function markChatThreadRead(thread, accountId) {
+  if (!thread || !accountId) return false;
+  let changed = false;
+  thread.messages.forEach((message) => {
+    if (message.senderId !== accountId && !message.readBy.includes(accountId)) {
+      message.readBy.push(accountId);
+      changed = true;
+    }
+  });
+  if (changed) thread.updatedAt = new Date().toISOString();
+  return changed;
+}
+
+function chatUnreadCountForContact(contactId) {
+  const user = currentAccount();
+  const thread = user ? chatThreadForParticipants(user.id, contactId) : null;
+  if (!thread) return 0;
+  return thread.messages.filter((message) => message.senderId !== user.id && !message.readBy.includes(user.id)).length;
+}
+
+function unreadChatCountForCurrentUser() {
+  const user = currentAccount();
+  if (!user) return 0;
+  return (state.chatThreads || [])
+    .filter((thread) => thread.participantIds.includes(user.id))
+    .reduce((total, thread) => total + thread.messages.filter((message) => message.senderId !== user.id && !message.readBy.includes(user.id)).length, 0);
 }
 
 function markAccountOnline(account) {
@@ -5358,8 +5599,8 @@ function defaultNexaAssistantMessages() {
       from: "ai",
       text:
         currentLanguage === "en"
-          ? "Hello, I am Nexa AI. I can guide you only on the features visible in your account. Teachers can ask about students, schedules, teaching pay, notifications, video calls, profile, and password changes. Students can also ask about tuition, placement tests, and Philippines English-study guidance."
-          : "Xin chào, tôi là Nexa AI. Tôi chỉ hướng dẫn các chức năng đang hiển thị trong tài khoản của bạn. Giáo viên có thể hỏi về học viên, lịch dạy, tiền dạy, thông báo, video call, hồ sơ và đổi mật khẩu. Học viên có thể hỏi thêm về học phí, test đầu vào và định hướng học tiếng Anh tại Philippines.",
+          ? "Hello, I am Nexa AI - Study Abroad Advisor. I can guide you only on the features visible in your account. Teachers can ask about students, schedules, teaching pay, notifications, video calls, profile, and password changes. Students can also ask about tuition, placement tests, and Philippines English-study guidance."
+          : "Xin chào, tôi là Nexa AI - Tư vấn du học. Tôi chỉ hướng dẫn các chức năng đang hiển thị trong tài khoản của bạn. Giáo viên có thể hỏi về học viên, lịch dạy, tiền dạy, thông báo, video call, hồ sơ và đổi mật khẩu. Học viên có thể hỏi thêm về học phí, test đầu vào và định hướng học tiếng Anh tại Philippines.",
       time: nowTime()
     }
   ];
@@ -6273,5 +6514,5 @@ function safe(value) {
 
 function registerServiceWorker() {
   if (!("serviceWorker" in navigator) || !canUseServerApi()) return;
-  navigator.serviceWorker.register("service-worker.js?v=20260530-nexa-ai-schools").catch(() => {});
+  navigator.serviceWorker.register("service-worker.js?v=20260530-chat-schools").catch(() => {});
 }
