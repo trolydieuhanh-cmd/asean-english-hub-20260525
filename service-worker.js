@@ -1,10 +1,10 @@
-const CACHE_NAME = "asean-english-hub-v31";
+const CACHE_NAME = "asean-english-hub-v32";
 const APP_SHELL = [
   "./",
   "./index.html",
-  "./styles.css?v=20260530-nexa-ai-guide",
-  "./app.js?v=20260530-nexa-ai-guide",
-  "./manifest.webmanifest?v=20260530-nexa-ai-guide",
+  "./styles.css?v=20260530-nexa-ai-study",
+  "./app.js?v=20260530-nexa-ai-study",
+  "./manifest.webmanifest?v=20260530-nexa-ai-study",
   "./assets/asean-holding-logo.png"
 ];
 

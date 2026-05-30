@@ -5444,7 +5444,18 @@ function nexaAssistantPromptGroups(role) {
           },
           {
             title: "Study in the Philippines",
-            prompts: ["Is studying English in the Philippines suitable for me?", "What is Sparta or Semi-Sparta learning?", "How should I choose an English school in the Philippines?", "What is the basic registration process?"]
+            prompts: [
+              "Is studying English in the Philippines suitable for me?",
+              "What is Sparta or Semi-Sparta learning?",
+              "Which course fits a beginner or weak English learner?",
+              "Should I choose ESL, IELTS, TOEIC, or Business English?",
+              "How should I choose an English school in the Philippines?",
+              "What should I know about Philinter in Cebu?",
+              "What is the estimated 4-week cost?",
+              "What should I prepare before departure?",
+              "What is the basic registration process?",
+              "Where can I follow MYB on Facebook or TikTok?"
+            ]
           },
           {
             title: "Profile",
@@ -5510,7 +5521,18 @@ function nexaAssistantPromptGroups(role) {
         },
         {
           title: "Du học Philippines",
-          prompts: ["Du học tiếng Anh Philippines có phù hợp với em không?", "Mô hình Sparta và Semi-Sparta là gì?", "Nên chọn trường Anh ngữ Philippines theo tiêu chí nào?", "Quy trình đăng ký du học Philippines cơ bản thế nào?"]
+          prompts: [
+            "Du học tiếng Anh Philippines có phù hợp với em không?",
+            "Mô hình Sparta và Semi-Sparta là gì?",
+            "Mất gốc tiếng Anh nên chọn khóa nào?",
+            "Nên chọn ESL, IELTS, TOEIC hay Business English?",
+            "Nên chọn trường Anh ngữ Philippines theo tiêu chí nào?",
+            "Trường Philinter ở Cebu có gì nổi bật?",
+            "Chi phí 4 tuần khoảng bao nhiêu?",
+            "Trước khi khởi hành cần chuẩn bị gì?",
+            "Quy trình đăng ký du học Philippines cơ bản thế nào?",
+            "Theo dõi MYB trên Facebook hoặc TikTok ở đâu?"
+          ]
         },
         {
           title: "Hồ sơ",
@@ -5679,6 +5701,28 @@ function isStudyAbroadQuestion(text) {
     "esl",
     "business english",
     "philinter",
+    "mat goc",
+    "giao tiep",
+    "khoa nao",
+    "chon khoa",
+    "junior",
+    "summer",
+    "du hoc he",
+    "4 tuan",
+    "30 trieu",
+    "hanh ly",
+    "truoc khi di",
+    "khoi hanh",
+    "qua canh",
+    "san bay",
+    "ky tuc xa",
+    "bua an",
+    "suc khoe",
+    "fanpage",
+    "facebook",
+    "tiktok",
+    "myb",
+    "english myb",
     "hoc tieng anh tai philippines",
     "study in the philippines",
     "english school"
@@ -5707,6 +5751,24 @@ function isAdminOnlyQuestion(text) {
 }
 
 function nexaStudyAbroadAnswer(text, en) {
+  if (matchesAny(text, ["facebook", "fanpage", "tiktok", "instagram", "myb", "english myb", "lien he", "contact", "zalo"])) {
+    return en
+      ? "MYB public pages list these official contact channels for Philippines English-study advice: Fanpage English MYB Education, TikTok duhoc.english.myb, Instagram English.MYB.Education, email English.MYB.Education@gmail.com, and phone/Zalo/Telegram 090 246 4413 or 037 449 0866. Use those channels to confirm the latest tuition, promotions, school availability, and departure instructions."
+      : "Các trang công khai của MYB ghi các kênh liên hệ tư vấn du học tiếng Anh Philippines: Fanpage English MYB Education, TikTok duhoc.english.myb, Instagram English.MYB.Education, email English.MYB.Education@gmail.com, Phone/Zalo/Telegram 090 246 4413 hoặc 037 449 0866. Hãy dùng các kênh này để xác nhận học phí, ưu đãi, tình trạng trường còn chỗ và hướng dẫn khởi hành mới nhất.";
+  }
+
+  if (matchesAny(text, ["mat goc", "beginner", "weak english", "yeu tieng anh", "giao tiep", "speaking", "phan xa", "chon khoa", "khoa nao", "course", "ielts", "toeic", "business english", "junior", "pronunciation", "phat am"])) {
+    return en
+      ? "Course direction: weak or beginner students usually start with General ESL or TOEIC Foundation; students who need fast communication improvement can choose Intensive ESL or Intensive Power Speaking; students targeting study, work, or migration can choose IELTS; workplace learners can choose Business English; pronunciation-focused learners can add a Pronunciation course; younger learners can consider Junior ESL. The best choice should follow your placement-test level, target score, available weeks, and daily study intensity."
+      : "Định hướng chọn khóa: học viên mất gốc hoặc nền yếu thường nên bắt đầu bằng General ESL hoặc TOEIC Foundation; cần tăng giao tiếp nhanh có thể chọn Intensive ESL hoặc Intensive Power Speaking; mục tiêu du học, làm việc, định cư nên cân nhắc IELTS; người đi làm cần giao tiếp công sở chọn Business English; yếu phát âm có thể thêm Pronunciation; học viên nhỏ tuổi có thể cân nhắc Junior ESL. Quyết định cuối cùng nên dựa trên điểm test đầu vào, mục tiêu điểm, số tuần học và khả năng theo cường độ mỗi ngày.";
+  }
+
+  if (matchesAny(text, ["truoc khi di", "hanh ly", "prepare", "departure", "khoi hanh", "qua canh", "hai quan", "giay to", "documents", "suc khoe", "health"])) {
+    return en
+      ? "Before departure, students should prepare passport, school invitation letter, flight ticket, tuition/payment confirmation, school address, pickup contact, basic personal medicine, clothes suitable for the city and season, study materials, and emergency contacts. MYB's public process also emphasizes pre-departure guidance, transit/customs preparation, tuition payment before entry, airport pickup information, and checking baggage and school details before flying."
+      : "Trước khi khởi hành, học viên nên chuẩn bị passport, thư mời nhập học, vé máy bay, xác nhận thanh toán học phí, địa chỉ trường, thông tin pick-up, thuốc cá nhân cơ bản, quần áo phù hợp thành phố/mùa, tài liệu học và liên hệ khẩn cấp. Quy trình MYB công khai cũng nhấn mạnh hướng dẫn trước khi đi, chuẩn bị quá cảnh/hải quan, thanh toán học phí trước ngày nhập học, nhận thông tin đón sân bay, kiểm tra hành lý và ghi nhớ thông tin trường/khóa học trước khi bay.";
+  }
+
   if (matchesAny(text, ["quy trinh", "dang ky", "registration", "thu moi", "passport", "hoc phi", "payment", "ve may bay", "pickup"])) {
     return en
       ? "Basic Philippines English-study registration flow: define your goal and budget, receive school suggestions and quotes, choose a school, provide personal information and passport copy, pay the registration fee, sign the agreement, receive the invitation letter, book flights, pay tuition before departure, receive airport pickup details, then travel to the Philippines. The public MYB page also notes that tuition should be paid at least 2 weeks before entry."
@@ -5714,6 +5776,11 @@ function nexaStudyAbroadAnswer(text, en) {
   }
 
   if (matchesAny(text, ["chon truong", "tieu chi", "school", "truong nao", "philinter", "cebu", "baguio", "clark", "subic"])) {
+    if (matchesAny(text, ["philinter"])) {
+      return en
+        ? "Philinter is described by MYB as a Cebu/Lapu-Lapu English school near Cebu international airport, with CEFR-based level evaluation, ESL, Intensive ESL, Intensive Power Speaking, Business English, TOEIC, IELTS, and Pronunciation courses. It also has 1:1 classrooms, small group rooms, dormitory options, health support, meals, and student services. This is useful for students who want a structured school with many course tracks, but final suitability still depends on your level, budget, and preferred study style."
+        : "Philinter được MYB mô tả là trường Anh ngữ tại Cebu/Lapu-Lapu, gần sân bay quốc tế Cebu, có đánh giá trình độ theo CEFR, các khóa ESL, Intensive ESL, Intensive Power Speaking, Business English, TOEIC, IELTS và Pronunciation. Trường có phòng học 1:1, phòng nhóm nhỏ, lựa chọn ký túc xá, hỗ trợ y tế, bữa ăn và dịch vụ học viên. Trường phù hợp để tham khảo nếu học viên muốn môi trường có nhiều lộ trình khóa học, nhưng vẫn cần xét trình độ, ngân sách và mức kỷ luật mong muốn.";
+    }
     return en
       ? "Choose a Philippines English school by goal, level, city, study discipline, dormitory standard, class structure, and budget. Common goals include General ESL, Intensive ESL, IELTS, TOEIC, Business English, speaking, and pronunciation. For example, MYB's public Philinter article describes Philinter in Cebu/Lapu-Lapu, near Cebu airport, with 1:1 rooms, group classes, dormitory options, IELTS/TOEIC/Business/Pronunciation courses, and CEFR-based level evaluation."
       : "Khi chọn trường Anh ngữ Philippines, nên xét mục tiêu học, trình độ hiện tại, thành phố, mức kỷ luật học tập, ký túc xá, mô hình lớp và ngân sách. Các mục tiêu thường gặp gồm General ESL, Intensive ESL, IELTS, TOEIC, Business English, speaking và pronunciation. Ví dụ, bài Philinter công khai của MYB mô tả Philinter tại Cebu/Lapu-Lapu, gần sân bay Cebu, có lớp 1:1, lớp nhóm, ký túc xá, khóa IELTS/TOEIC/Business/Pronunciation và đánh giá trình độ theo CEFR.";
@@ -5729,6 +5796,12 @@ function nexaStudyAbroadAnswer(text, en) {
     return en
       ? "The public MYB page estimates an all-in 4-week English-study package at around 30 million VND, including tuition, accommodation, and meals, with more than 200 English-learning hours. Treat this as a rough reference only; actual cost depends on school, room type, course, promotions, flight ticket, insurance, personal expenses, and exchange rate."
       : "Trang MYB công khai ước tính gói học tiếng Anh 4 tuần khoảng 30 triệu VNĐ, gồm học phí, chỗ ở và bữa ăn, với hơn 200 giờ học tiếng Anh. Đây chỉ nên xem là mốc tham khảo; chi phí thật phụ thuộc trường, loại phòng, khóa học, ưu đãi, vé máy bay, bảo hiểm, chi tiêu cá nhân và tỷ giá.";
+  }
+
+  if (matchesAny(text, ["ky tuc xa", "dorm", "bua an", "meal", "an o", "living", "giat", "laundry", "y te", "medical", "health", "an toan", "safe"])) {
+    return en
+      ? "For living conditions, check dormitory type, meal plan, laundry, cleaning, medical support, curfew, and campus rules before choosing a school. MYB's Philinter article describes dormitory options, daily meals, a medical room, regular health support, and laundry/cleaning rules. These details matter if you are young, studying intensively, or need a quiet routine."
+      : "Khi xét điều kiện sinh hoạt, hãy hỏi rõ loại ký túc xá, bữa ăn, giặt giũ, dọn phòng, hỗ trợ y tế, giờ giới nghiêm và nội quy trường. Bài Philinter của MYB có mô tả lựa chọn ký túc xá, bữa ăn hằng ngày, phòng y tế, hỗ trợ sức khỏe và quy định giặt/dọn phòng. Các yếu tố này rất quan trọng nếu học viên còn nhỏ, học cường độ cao hoặc cần nếp sinh hoạt ổn định.";
   }
 
   if (matchesAny(text, ["phu hop", "suitable", "ai nen di", "duoi 18", "he", "summer", "lo trinh"])) {
@@ -5845,7 +5918,25 @@ function isNexaAssistantInScope(text) {
     "business english",
     "philinter",
     "passport",
-    "pickup"
+    "pickup",
+    "mat goc",
+    "giao tiep",
+    "junior",
+    "summer",
+    "du hoc he",
+    "hanh ly",
+    "truoc khi di",
+    "khoi hanh",
+    "qua canh",
+    "san bay",
+    "ky tuc xa",
+    "bua an",
+    "suc khoe",
+    "fanpage",
+    "facebook",
+    "tiktok",
+    "myb",
+    "english myb"
   ]);
 }
 
@@ -6063,5 +6154,5 @@ function safe(value) {
 
 function registerServiceWorker() {
   if (!("serviceWorker" in navigator) || !canUseServerApi()) return;
-  navigator.serviceWorker.register("service-worker.js?v=20260530-nexa-ai-guide").catch(() => {});
+  navigator.serviceWorker.register("service-worker.js?v=20260530-nexa-ai-study").catch(() => {});
 }

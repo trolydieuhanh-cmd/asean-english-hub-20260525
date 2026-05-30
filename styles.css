@@ -1281,9 +1281,13 @@ tr:last-child td {
   grid-template-columns: minmax(0, 1fr) 320px;
   gap: 16px;
   align-items: start;
+  min-height: 0;
 }
 
 .nexa-assistant-main {
+  display: grid;
+  grid-template-rows: auto minmax(320px, 1fr) auto;
+  gap: 12px;
   min-height: 520px;
 }
 
@@ -1347,12 +1351,17 @@ tr:last-child td {
   display: grid;
   grid-template-columns: minmax(0, 1fr) auto;
   gap: 10px;
-  margin-top: 12px;
 }
 
 .nexa-rules-panel {
   display: grid;
   gap: 12px;
+  position: sticky;
+  top: 16px;
+  max-height: calc(100dvh - 120px);
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  scrollbar-gutter: stable;
 }
 
 .nexa-rules-panel h3 {
@@ -1382,6 +1391,7 @@ tr:last-child td {
 .assistant-prompts {
   display: grid;
   gap: 12px;
+  min-height: 0;
 }
 
 .assistant-prompt-group {
@@ -1542,6 +1552,12 @@ tr:last-child td {
 
   .nexa-assistant-layout {
     grid-template-columns: 1fr;
+  }
+
+  .nexa-rules-panel {
+    position: relative;
+    top: auto;
+    max-height: 360px;
   }
 }
 
