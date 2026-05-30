@@ -2817,8 +2817,17 @@ function renderNexaAssistant() {
           ${nexaAssistantRules().map((rule) => `<li>${safe(rule)}</li>`).join("")}
         </ul>
         <div class="assistant-prompts">
-          ${nexaAssistantQuickPrompts(user.role)
-            .map((prompt) => `<button class="btn btn-secondary btn-small" type="button" data-action="nexa-quick-prompt" data-prompt="${safe(prompt)}">${safe(prompt)}</button>`)
+          ${nexaAssistantPromptGroups(user.role)
+            .map(
+              (group) => `
+                <section class="assistant-prompt-group">
+                  <h4>${safe(group.title)}</h4>
+                  <div class="assistant-prompt-list">
+                    ${group.prompts.map((prompt) => `<button class="btn btn-secondary btn-small" type="button" data-action="nexa-quick-prompt" data-prompt="${safe(prompt)}">${safe(prompt)}</button>`).join("")}
+                  </div>
+                </section>
+              `
+            )
             .join("")}
         </div>
       </aside>
@@ -5303,17 +5312,19 @@ function currentLocale() {
 function nexaAssistantRules() {
   if (currentLanguage === "en") {
     return [
-      "Only answer questions about using Asean Holding English Hub.",
-      "Do not answer topics outside the software, such as news, finance, health, legal advice, entertainment, or general knowledge.",
-      "Guide users by role: teachers see teaching, schedule, class, salary, profile, and notification features; students see learning, schedule, class, tuition, placement test, profile, and notification features.",
-      "If a question is unclear, ask the user to name the exact screen or button they are using."
+      "Only answer questions about the left-sidebar features visible to the signed-in teacher or student.",
+      "Do not answer unrelated topics such as news, stocks, crypto, medical, legal, entertainment, or general knowledge.",
+      "Teacher scope: dashboard, assigned students, teaching schedule, teaching pay, notifications, video call, profile, language, and Nexa AI usage.",
+      "Student scope: dashboard, timetable, assigned teachers, tuition, placement test, notifications, video call, profile, language, Nexa AI usage, and Philippines English-study guidance.",
+      "For admin-only tasks, explain that only admin can perform them and tell the user which visible screen they can check."
     ];
   }
   return [
-    "Chỉ trả lời các câu hỏi về cách sử dụng phần mềm Asean Holding English Hub.",
-    "Không trả lời nội dung ngoài phần mềm như tin tức, tài chính, y tế, pháp lý, giải trí hoặc kiến thức chung.",
-    "Hướng dẫn đúng theo vai trò: giáo viên dùng lịch dạy, mở lớp, video call, tiền dạy, hồ sơ và thông báo; học viên dùng lịch học, vào lớp, học phí, test đầu vào, hồ sơ và thông báo.",
-    "Nếu câu hỏi chưa rõ, yêu cầu người dùng nói rõ màn hình hoặc nút đang thao tác."
+    "Chỉ trả lời câu hỏi thuộc các mục trên thanh công cụ bên trái của tài khoản giáo viên hoặc học viên đang đăng nhập.",
+    "Không trả lời nội dung ngoài phần mềm như tin tức, chứng khoán, crypto, y tế, pháp lý, giải trí hoặc kiến thức chung.",
+    "Phạm vi giáo viên: Tổng quan, Học viên, Lịch dạy, Tiền dạy, Thông báo, Video call, Hồ sơ, Ngôn ngữ và cách dùng Nexa AI.",
+    "Phạm vi học viên: Tổng quan, Thời khóa biểu, Giáo viên, Học phí, Test đầu vào, Thông báo, Video call, Hồ sơ, Ngôn ngữ, cách dùng Nexa AI và tư vấn học tiếng Anh tại Philippines.",
+    "Nếu câu hỏi thuộc chức năng admin, chỉ giải thích rằng admin thực hiện và hướng dẫn người dùng kiểm tra ở màn hình mình được phép xem."
   ];
 }
 
@@ -5334,8 +5345,8 @@ function defaultNexaAssistantMessages() {
       from: "ai",
       text:
         currentLanguage === "en"
-          ? "Hello, I am Nexa AI. I can guide you on using this software only. Ask me about schedules, classes, video lessons, tuition, salary, placement tests, notifications, profile, or password changes."
-          : "Xin chào, tôi là Nexa AI. Tôi chỉ hướng dẫn cách sử dụng phần mềm này. Bạn có thể hỏi về lịch học, lớp online, video call, học phí, tiền dạy, test đầu vào, thông báo, hồ sơ hoặc đổi mật khẩu.",
+          ? "Hello, I am Nexa AI. I can guide you only on the features visible in your account. Teachers can ask about students, schedules, teaching pay, notifications, video calls, profile, and password changes. Students can also ask about tuition, placement tests, and Philippines English-study guidance."
+          : "Xin chào, tôi là Nexa AI. Tôi chỉ hướng dẫn các chức năng đang hiển thị trong tài khoản của bạn. Giáo viên có thể hỏi về học viên, lịch dạy, tiền dạy, thông báo, video call, hồ sơ và đổi mật khẩu. Học viên có thể hỏi thêm về học phí, test đầu vào và định hướng học tiếng Anh tại Philippines.",
       time: nowTime()
     }
   ];
@@ -5373,15 +5384,143 @@ function submitNexaAssistantQuestion(question) {
   }, 40);
 }
 
-function nexaAssistantQuickPrompts(role) {
+function nexaAssistantPromptGroups(role) {
   if (currentLanguage === "en") {
     return role === "teacher"
-      ? ["How do I open a class?", "Where do I see my schedule?", "How is my teaching pay calculated?"]
-      : ["How do I join a class?", "Where do I see my tuition?", "How do I take a placement test?"];
+      ? [
+          {
+            title: "Dashboard",
+            prompts: ["What does the teacher dashboard show?", "Where do I see today's classes?", "How do I know a class was opened?"]
+          },
+          {
+            title: "Students",
+            prompts: ["Where do I see my assigned students?", "Can one teacher teach many students?", "What should I do if a student asks to change schedule?"]
+          },
+          {
+            title: "Teaching Schedule",
+            prompts: ["Where do I see my weekly teaching schedule?", "Why can't teachers create schedules?", "How do I know admin edited a lesson?"]
+          },
+          {
+            title: "Teaching Pay",
+            prompts: ["How is teaching pay calculated per lesson?", "Do cancelled lessons count as teaching pay?", "Where do I check my total pay?"]
+          },
+          {
+            title: "Notifications",
+            prompts: ["Where do new notifications appear?", "Will I be notified when a lesson changes?", "How do live-class alerts work?"]
+          },
+          {
+            title: "Video Call",
+            prompts: ["How do I open an online class?", "Why is the Join button not visible yet?", "Can multiple classes be opened at the same time?"]
+          },
+          {
+            title: "Profile",
+            prompts: ["How do I change my password?", "How do I switch Vietnamese and English?", "What should I do if my email is wrong?"]
+          }
+        ]
+      : [
+          {
+            title: "Dashboard",
+            prompts: ["What does the student dashboard show?", "Where do I see my next class?", "How do I know my class is open?"]
+          },
+          {
+            title: "Timetable",
+            prompts: ["Where do I see this week's timetable?", "Will I be notified when my schedule changes?", "What should I do if my schedule overlaps?"]
+          },
+          {
+            title: "Teachers",
+            prompts: ["Where do I see my assigned teachers?", "Can I study with more than one teacher?", "What if I need a different teacher?"]
+          },
+          {
+            title: "Tuition",
+            prompts: ["How is tuition calculated per lesson?", "Where do I see total tuition?", "Do cancelled lessons count as tuition?"]
+          },
+          {
+            title: "Placement Test",
+            prompts: ["How do I take a placement test?", "How do listening and speaking questions work?", "Where is my learning path after admin reviews the test?"]
+          },
+          {
+            title: "Video Call",
+            prompts: ["How do I join an online class?", "What should I do if the Google Meet link does not open?", "How do I allow microphone and camera?"]
+          },
+          {
+            title: "Study in the Philippines",
+            prompts: ["Is studying English in the Philippines suitable for me?", "What is Sparta or Semi-Sparta learning?", "How should I choose an English school in the Philippines?", "What is the basic registration process?"]
+          },
+          {
+            title: "Profile",
+            prompts: ["How do I change my password?", "How do I switch Vietnamese and English?", "What should I do if my account information is wrong?"]
+          }
+        ];
   }
   return role === "teacher"
-    ? ["Cách mở lớp online?", "Xem lịch dạy ở đâu?", "Tiền dạy được tính thế nào?"]
-    : ["Cách vào lớp online?", "Xem học phí ở đâu?", "Làm bài test đầu vào thế nào?"];
+    ? [
+        {
+          title: "Tổng quan",
+          prompts: ["Tổng quan giáo viên có những gì?", "Xem lớp hôm nay ở đâu?", "Làm sao biết lớp đã được mở?"]
+        },
+        {
+          title: "Học viên",
+          prompts: ["Xem học viên phụ trách ở đâu?", "Một giáo viên dạy nhiều học viên được không?", "Nếu học viên muốn đổi lịch thì làm gì?"]
+        },
+        {
+          title: "Lịch dạy",
+          prompts: ["Xem lịch dạy tuần này ở đâu?", "Vì sao giáo viên không tự tạo lịch?", "Lịch bị sửa thì giáo viên biết ở đâu?"]
+        },
+        {
+          title: "Tiền dạy",
+          prompts: ["Tiền dạy được tính theo buổi thế nào?", "Buổi hủy có tính tiền dạy không?", "Xem tổng tiền dạy ở đâu?"]
+        },
+        {
+          title: "Thông báo",
+          prompts: ["Thông báo mới hiển thị ở đâu?", "Khi lịch đổi có thông báo không?", "Thông báo lớp đang mở hoạt động thế nào?"]
+        },
+        {
+          title: "Video call",
+          prompts: ["Cách mở lớp online?", "Vì sao chưa thấy nút Vào lớp?", "Có thể mở nhiều lớp cùng lúc không?"]
+        },
+        {
+          title: "Hồ sơ",
+          prompts: ["Đổi mật khẩu thế nào?", "Đổi ngôn ngữ Anh Việt ở đâu?", "Email tài khoản sai thì làm gì?"]
+        }
+      ]
+    : [
+        {
+          title: "Tổng quan",
+          prompts: ["Tổng quan học viên có những gì?", "Xem lớp sắp tới ở đâu?", "Làm sao biết lớp đã mở?"]
+        },
+        {
+          title: "Thời khóa biểu",
+          prompts: ["Xem lịch học tuần này ở đâu?", "Khi lịch học đổi có báo không?", "Nếu lịch học bị trùng thì làm gì?"]
+        },
+        {
+          title: "Giáo viên",
+          prompts: ["Xem giáo viên phụ trách ở đâu?", "Một học viên học nhiều giáo viên được không?", "Nếu muốn đổi giáo viên thì làm gì?"]
+        },
+        {
+          title: "Học phí",
+          prompts: ["Học phí được tính theo buổi thế nào?", "Xem tổng học phí ở đâu?", "Buổi hủy có tính học phí không?"]
+        },
+        {
+          title: "Test đầu vào",
+          prompts: ["Làm bài test đầu vào thế nào?", "Phần nghe và phần nói hoạt động thế nào?", "Lộ trình học sau khi admin chấm bài xem ở đâu?"]
+        },
+        {
+          title: "Video call",
+          prompts: ["Cách vào lớp online?", "Nếu link Google Meet không mở thì làm gì?", "Cách bật micro và camera?"]
+        },
+        {
+          title: "Du học Philippines",
+          prompts: ["Du học tiếng Anh Philippines có phù hợp với em không?", "Mô hình Sparta và Semi-Sparta là gì?", "Nên chọn trường Anh ngữ Philippines theo tiêu chí nào?", "Quy trình đăng ký du học Philippines cơ bản thế nào?"]
+        },
+        {
+          title: "Hồ sơ",
+          prompts: ["Đổi mật khẩu thế nào?", "Đổi ngôn ngữ Anh Việt ở đâu?", "Thông tin tài khoản sai thì làm gì?"]
+        }
+      ];
+}
+
+function nexaAssistantQuickPrompts(role) {
+  return nexaAssistantPromptGroups(role).flatMap((group) => group.prompts);
 }
 
 function nexaAssistantAnswer(question) {
@@ -5391,8 +5530,63 @@ function nexaAssistantAnswer(question) {
 
   if (!isNexaAssistantInScope(normalized)) {
     return en
-      ? "I can only guide you on using Asean Holding English Hub. Please ask about schedules, online classes, video calls, tuition, teaching pay, placement tests, notifications, profile, or password changes."
-      : "Tôi chỉ hỗ trợ hướng dẫn sử dụng phần mềm Asean Holding English Hub. Vui lòng hỏi về lịch học, lớp online, video call, học phí, tiền dạy, test đầu vào, thông báo, hồ sơ hoặc đổi mật khẩu.";
+      ? `I only answer questions about ${nexaVisibleScopeText(role)}. Please ask about the features visible in your account.`
+      : `Tôi chỉ trả lời các câu hỏi về ${nexaVisibleScopeText(role)}. Vui lòng hỏi đúng các mục đang hiển thị trong tài khoản của bạn.`;
+  }
+
+  if (role === "teacher" && isStudyAbroadQuestion(normalized)) {
+    return en
+      ? "Philippines English-study guidance is shown for student accounts. In a teacher account, I can only guide you on dashboard, assigned students, schedule, teaching pay, notifications, video call, profile, language, and Nexa AI usage."
+      : "Tư vấn học tiếng Anh tại Philippines được dành cho tài khoản học viên. Trong tài khoản giáo viên, tôi chỉ hướng dẫn Tổng quan, Học viên, Lịch dạy, Tiền dạy, Thông báo, Video call, Hồ sơ, Ngôn ngữ và cách dùng Nexa AI.";
+  }
+
+  if (matchesAny(normalized, ["khong tu tao lich", "vi sao giao vien khong tu tao lich", "why can t teachers create schedules", "why cannot teachers create schedules"])) {
+    return en
+      ? "Teachers cannot create official schedules because admin controls teacher-student assignments, tuition, teaching pay, and conflict checks. This keeps finance and schedule data consistent. Teachers can view the schedule and open the online class when the scheduled time arrives."
+      : "Giáo viên không tự tạo lịch chính thức vì admin cần kiểm soát phân công giáo viên-học viên, học phí, tiền dạy và cảnh báo trùng lịch. Cách này giữ dữ liệu tài chính và lịch học thống nhất. Giáo viên xem lịch đã được xếp và mở lớp online khi đến giờ học.";
+  }
+
+  if (isAdminOnlyQuestion(normalized)) {
+    return en
+      ? "That is an admin-only function. Teachers and students cannot create accounts, import schedules, export finance files, edit all users, or manage system security. You can only check the result in your visible screens such as Schedule, Notifications, Video call, Tuition/Teaching pay, or Profile."
+      : "Đây là chức năng chỉ admin thực hiện. Giáo viên và học viên không thể tạo tài khoản, import lịch, xuất file tài chính, sửa toàn bộ người dùng hoặc quản trị bảo mật hệ thống. Bạn chỉ kiểm tra kết quả trong các màn hình mình được xem như Lịch, Thông báo, Video call, Học phí/Tiền dạy hoặc Hồ sơ.";
+  }
+
+  if (isStudyAbroadQuestion(normalized)) {
+    return nexaStudyAbroadAnswer(normalized, en);
+  }
+
+  if (matchesAny(normalized, ["tong quan", "dashboard", "overview", "home"])) {
+    if (role === "teacher") {
+      return en
+        ? "The teacher dashboard summarizes upcoming teaching sessions, live-class notices, assigned students, and quick finance indicators. Use it first after login to see what needs attention today, then open Schedule or Video call for details."
+        : "Tổng quan của giáo viên tóm tắt buổi dạy sắp tới, thông báo lớp đang mở, học viên phụ trách và chỉ số tiền dạy nhanh. Sau khi đăng nhập, nên xem Tổng quan trước để biết việc cần chú ý trong ngày, rồi mở Lịch dạy hoặc Video call để thao tác chi tiết.";
+    }
+    return en
+      ? "The student dashboard summarizes upcoming lessons, live-class notices, tuition indicators, placement-test status, and notifications. If a class is opened, check the notice and go to Video call."
+      : "Tổng quan của học viên tóm tắt lớp sắp tới, thông báo lớp đang mở, học phí, tình trạng test đầu vào và thông báo mới. Nếu lớp được mở, hãy xem thông báo rồi vào mục Video call.";
+  }
+
+  if (matchesAny(normalized, ["hoc vien", "assigned student", "student list", "phu trach"])) {
+    if (role !== "teacher") {
+      return en
+        ? "Students see assigned teachers in the Teachers screen. If you need to change teacher, contact admin because only admin can assign teachers."
+        : "Học viên xem giáo viên phụ trách trong mục Giáo viên. Nếu cần đổi giáo viên, hãy liên hệ admin vì chỉ admin được phân công giáo viên.";
+    }
+    return en
+      ? "Open Students to see the learners assigned to you. A teacher can teach many students, but the schedule must not overlap. If a student asks to change time or teacher, tell admin so admin can update the official schedule."
+      : "Vào mục Học viên để xem các học viên đang được phân công. Một giáo viên có thể dạy nhiều học viên, nhưng lịch không được trùng. Nếu học viên muốn đổi giờ hoặc đổi giáo viên, giáo viên báo admin để admin cập nhật lịch chính thức.";
+  }
+
+  if (matchesAny(normalized, ["giao vien", "assigned teacher", "teacher list", "doi giao vien"])) {
+    if (role !== "student") {
+      return en
+        ? "Teachers use the Students screen to view assigned learners. Teacher assignment changes are made by admin."
+        : "Giáo viên dùng mục Học viên để xem người học được phân công. Việc thay đổi phân công giáo viên do admin thực hiện.";
+    }
+    return en
+      ? "Open Teachers to see who is assigned to teach you. One student can study with multiple teachers as long as lesson times do not overlap. If you want a different teacher, contact admin."
+      : "Vào mục Giáo viên để xem giáo viên đang phụ trách. Một học viên có thể học nhiều giáo viên miễn là lịch không trùng. Nếu muốn đổi giáo viên, hãy liên hệ admin.";
   }
 
   if (matchesAny(normalized, ["mo lop", "open class", "bat dau lop", "start class"])) {
@@ -5408,14 +5602,19 @@ function nexaAssistantAnswer(question) {
 
   if (matchesAny(normalized, ["video", "meet", "vao lop", "join class", "camera", "micro", "mic"])) {
     return en
-      ? "Use Video call to enter the live lesson. If the class has a Google Meet link, pressing Join class opens Meet in a new tab. Allow camera and microphone permission in the browser when asked."
-      : "Vào mục Video call để vào buổi học online. Nếu lớp có link Google Meet, bấm Vào lớp để mở Meet ở tab mới. Khi trình duyệt hỏi quyền, hãy cho phép camera và micro.";
+      ? "Use Video call for online lessons. Teachers open scheduled classes when it is time. Students join only after the class is opened. If there is a Google Meet link, Join class opens it in a new tab. If the browser asks, allow microphone and camera. If the button is missing, check the schedule time and wait for the teacher/admin to open the lesson."
+      : "Dùng mục Video call cho lớp online. Giáo viên mở lớp theo lịch khi đến giờ. Học viên chỉ vào được khi lớp đã mở. Nếu có link Google Meet, bấm Vào lớp để mở ở tab mới. Khi trình duyệt hỏi quyền, hãy cho phép micro và camera. Nếu chưa thấy nút vào lớp, kiểm tra giờ học và chờ giáo viên/admin mở lớp.";
   }
 
   if (matchesAny(normalized, ["lich", "schedule", "doi lich", "sua lich", "calendar"])) {
+    if (role === "teacher") {
+      return en
+        ? "Open Teaching Schedule to view your lessons by date and time. Admin creates or edits official schedules. When admin changes a lesson, you receive a notification. If a teacher or student time overlaps, the system warns admin before saving."
+        : "Vào mục Lịch dạy để xem các buổi dạy theo ngày và giờ. Admin là người tạo hoặc sửa lịch chính thức. Khi admin đổi lịch, giáo viên sẽ nhận thông báo. Nếu lịch giáo viên hoặc học viên bị trùng, hệ thống sẽ cảnh báo admin trước khi lưu.";
+    }
     return en
-      ? "Open Schedule to view your lessons. Admin creates and edits schedules. When a lesson is changed, the related teacher and student receive a notification. The system warns admin if teacher or student time overlaps."
-      : "Vào mục Lịch để xem lịch học/dạy. Admin là người tạo và sửa lịch. Khi lịch được sửa, giáo viên và học viên liên quan sẽ nhận thông báo. Hệ thống sẽ cảnh báo admin nếu lịch của giáo viên hoặc học viên bị trùng.";
+      ? "Open Timetable to view your learning schedule. Admin creates and edits lessons. When a lesson is changed, you receive a notification. If your time overlaps with another lesson, the system warns admin during scheduling."
+      : "Vào mục Thời khóa biểu để xem lịch học. Admin là người tạo và sửa lịch. Khi lịch được sửa, học viên sẽ nhận thông báo. Nếu lịch của bạn bị trùng với buổi khác, hệ thống cảnh báo admin khi xếp lịch.";
   }
 
   if (matchesAny(normalized, ["thong bao", "notification", "bao tin", "alert"])) {
@@ -5426,8 +5625,8 @@ function nexaAssistantAnswer(question) {
 
   if (matchesAny(normalized, ["mat khau", "password", "ho so", "profile", "email", "tai khoan", "account"])) {
     return en
-      ? "Open Profile to review your account information and change your password. If you cannot log in or need your email changed, contact admin."
-      : "Vào mục Hồ sơ để xem thông tin tài khoản và đổi mật khẩu. Nếu không đăng nhập được hoặc cần đổi email, hãy liên hệ admin.";
+      ? "Open Profile to review your account details and change password. Enter the current password, enter the new password twice, then save. If the email or name is wrong, contact admin because only admin can edit account identity."
+      : "Vào mục Hồ sơ để xem thông tin tài khoản và đổi mật khẩu. Nhập mật khẩu hiện tại, nhập mật khẩu mới hai lần rồi lưu. Nếu email hoặc tên tài khoản sai, hãy liên hệ admin vì chỉ admin được sửa thông tin định danh.";
   }
 
   if (matchesAny(normalized, ["hoc phi", "tuition", "payment", "so tien hoc", "pay student"])) {
@@ -5438,8 +5637,8 @@ function nexaAssistantAnswer(question) {
 
   if (matchesAny(normalized, ["tien day", "salary", "teacher pay", "luong", "thu lao"])) {
     return en
-      ? "Teachers can view teaching pay in their finance or dashboard area. Pay is calculated per completed lesson using the amount admin entered for that lesson."
-      : "Giáo viên xem tiền dạy trong phần tài chính hoặc tổng quan. Tiền dạy được tính theo từng buổi đã dạy, dựa trên số tiền admin nhập riêng cho buổi đó.";
+      ? "Teachers view teaching pay in Teaching Pay and dashboard finance cards. Pay is calculated per lesson from the amount admin entered for that lesson. Cancelled lessons should not be counted as completed teaching pay. If an amount looks wrong, ask admin to check that lesson's pay amount."
+      : "Giáo viên xem tiền dạy ở mục Tiền dạy và các thẻ tài chính trong Tổng quan. Tiền dạy được tính theo từng buổi từ số tiền admin nhập riêng cho buổi đó. Buổi đã hủy không nên tính như buổi hoàn thành. Nếu số tiền sai, hãy nhờ admin kiểm tra số tiền của buổi học đó.";
   }
 
   if (matchesAny(normalized, ["test", "placement", "dau vao", "nghe", "noi", "doc", "phat am", "record"])) {
@@ -5449,8 +5648,8 @@ function nexaAssistantAnswer(question) {
         : "Test đầu vào là phần giữa admin và học viên, nên tài khoản giáo viên không hiển thị chức năng này.";
     }
     return en
-      ? "Open Placement test to take assigned tests. Listening may include audio. Speaking may require recording with the microphone. Submit the test so admin can review and build your study path."
-      : "Vào mục Test đầu vào để làm bài được giao. Phần nghe có thể có audio. Phần nói có thể cần bấm micro để ghi âm. Sau khi nộp, admin sẽ đánh giá và xây dựng lộ trình học.";
+      ? "Open Placement Test to take tests assigned by admin. Listening may include an audio player. Speaking may include a microphone recording button; allow microphone permission before recording. Reading, comprehension, and pronunciation questions are answered in the form. Submit once finished so admin can score and add a personal learning path."
+      : "Vào mục Test đầu vào để làm bài admin giao. Phần nghe có thể có trình phát audio. Phần nói có thể có nút ghi âm bằng micro; hãy cho phép quyền micro trước khi ghi. Phần đọc, hiểu và phát âm được trả lời trong biểu mẫu. Khi làm xong, bấm nộp để admin chấm và thêm lộ trình học riêng.";
   }
 
   if (matchesAny(normalized, ["dang xuat", "logout", "language", "ngon ngu", "tieng anh", "tieng viet"])) {
@@ -5462,6 +5661,96 @@ function nexaAssistantAnswer(question) {
   return en
     ? "This is within the software scope, but I need the exact screen or button name to guide you precisely. Please tell me where you are in the app."
     : "Nội dung này thuộc phạm vi phần mềm, nhưng tôi cần biết chính xác bạn đang ở màn hình hoặc nút nào để hướng dẫn đúng. Vui lòng nói rõ vị trí bạn đang thao tác.";
+}
+
+function isStudyAbroadQuestion(text) {
+  return matchesAny(text, [
+    "du hoc",
+    "philippines",
+    "philipin",
+    "sparta",
+    "semi sparta",
+    "cebu",
+    "baguio",
+    "clark",
+    "subic",
+    "ielts",
+    "toeic",
+    "esl",
+    "business english",
+    "philinter",
+    "hoc tieng anh tai philippines",
+    "study in the philippines",
+    "english school"
+  ]);
+}
+
+function isAdminOnlyQuestion(text) {
+  return matchesAny(text, [
+    "tao tai khoan",
+    "xoa tai khoan",
+    "sua tai khoan",
+    "tao lich",
+    "import",
+    "csv",
+    "excel",
+    "xuat file",
+    "audit",
+    "nhat ky bao mat",
+    "backup",
+    "sao luu",
+    "bao mat he thong",
+    "phan quyen",
+    "admin tao",
+    "admin sua"
+  ]);
+}
+
+function nexaStudyAbroadAnswer(text, en) {
+  if (matchesAny(text, ["quy trinh", "dang ky", "registration", "thu moi", "passport", "hoc phi", "payment", "ve may bay", "pickup"])) {
+    return en
+      ? "Basic Philippines English-study registration flow: define your goal and budget, receive school suggestions and quotes, choose a school, provide personal information and passport copy, pay the registration fee, sign the agreement, receive the invitation letter, book flights, pay tuition before departure, receive airport pickup details, then travel to the Philippines. The public MYB page also notes that tuition should be paid at least 2 weeks before entry."
+      : "Quy trình đăng ký du học tiếng Anh Philippines cơ bản: xác định mục tiêu và ngân sách, nhận tư vấn trường và báo giá, chọn trường, cung cấp thông tin cá nhân và bản sao passport, thanh toán lệ phí đăng ký, ký hợp đồng, nhận thư mời nhập học, đặt vé máy bay, thanh toán học phí trước khi đi, nhận thông tin đón sân bay rồi khởi hành sang Philippines. Trang MYB công khai cũng nêu học phí nên thanh toán trước ngày nhập học ít nhất 2 tuần.";
+  }
+
+  if (matchesAny(text, ["chon truong", "tieu chi", "school", "truong nao", "philinter", "cebu", "baguio", "clark", "subic"])) {
+    return en
+      ? "Choose a Philippines English school by goal, level, city, study discipline, dormitory standard, class structure, and budget. Common goals include General ESL, Intensive ESL, IELTS, TOEIC, Business English, speaking, and pronunciation. For example, MYB's public Philinter article describes Philinter in Cebu/Lapu-Lapu, near Cebu airport, with 1:1 rooms, group classes, dormitory options, IELTS/TOEIC/Business/Pronunciation courses, and CEFR-based level evaluation."
+      : "Khi chọn trường Anh ngữ Philippines, nên xét mục tiêu học, trình độ hiện tại, thành phố, mức kỷ luật học tập, ký túc xá, mô hình lớp và ngân sách. Các mục tiêu thường gặp gồm General ESL, Intensive ESL, IELTS, TOEIC, Business English, speaking và pronunciation. Ví dụ, bài Philinter công khai của MYB mô tả Philinter tại Cebu/Lapu-Lapu, gần sân bay Cebu, có lớp 1:1, lớp nhóm, ký túc xá, khóa IELTS/TOEIC/Business/Pronunciation và đánh giá trình độ theo CEFR.";
+  }
+
+  if (matchesAny(text, ["sparta", "semi sparta", "eop", "8 12", "1 kem 1", "one on one", "intensive"])) {
+    return en
+      ? "The Sparta model is an intensive English-study format: many lessons per day, strong study discipline, one-on-one lessons with Filipino teachers, and English-only practice on campus. Semi-Sparta is usually more flexible, often allowing students to go out under school rules. MYB's public page describes 8-12 lessons per day, 1:1 classes, English-only policy, and dormitory rules depending on Sparta or Semi-Sparta."
+      : "Mô hình Sparta là cách học tiếng Anh cường độ cao: nhiều tiết mỗi ngày, kỷ luật học tập chặt, học 1 kèm 1 với giáo viên Philippines và thực hành English-only trong khuôn viên trường. Semi-Sparta thường linh hoạt hơn, có thể cho học viên ra ngoài theo nội quy trường. Trang MYB công khai mô tả 8-12 tiết/ngày, lớp 1 kèm 1, chính sách EOP và quy định ký túc xá tùy mô hình Sparta hoặc Semi-Sparta.";
+  }
+
+  if (matchesAny(text, ["chi phi", "cost", "bao nhieu tien", "30 trieu", "budget", "ngan sach"])) {
+    return en
+      ? "The public MYB page estimates an all-in 4-week English-study package at around 30 million VND, including tuition, accommodation, and meals, with more than 200 English-learning hours. Treat this as a rough reference only; actual cost depends on school, room type, course, promotions, flight ticket, insurance, personal expenses, and exchange rate."
+      : "Trang MYB công khai ước tính gói học tiếng Anh 4 tuần khoảng 30 triệu VNĐ, gồm học phí, chỗ ở và bữa ăn, với hơn 200 giờ học tiếng Anh. Đây chỉ nên xem là mốc tham khảo; chi phí thật phụ thuộc trường, loại phòng, khóa học, ưu đãi, vé máy bay, bảo hiểm, chi tiêu cá nhân và tỷ giá.";
+  }
+
+  if (matchesAny(text, ["phu hop", "suitable", "ai nen di", "duoi 18", "he", "summer", "lo trinh"])) {
+    return en
+      ? "Studying English in the Philippines can suit students who need an English environment, intensive speaking practice, IELTS/TOEIC preparation, Business English, or a short-term confidence boost. Younger students often choose summer programs because they must still follow regular school calendars. Before deciding, clarify your current level, target score, available weeks, budget, health needs, and preferred discipline level."
+      : "Du học tiếng Anh Philippines phù hợp với học viên cần môi trường tiếng Anh, luyện nói cường độ cao, luyện IELTS/TOEIC, Business English hoặc muốn tăng phản xạ trong thời gian ngắn. Học viên dưới 18 tuổi thường phù hợp khóa hè vì vẫn phải theo lịch học phổ thông. Trước khi chọn, cần làm rõ trình độ hiện tại, mục tiêu điểm, số tuần có thể học, ngân sách, nhu cầu sức khỏe và mức kỷ luật mong muốn.";
+  }
+
+  return en
+    ? "For Philippines English-study guidance, I can help students clarify goals, compare Sparta/Semi-Sparta learning styles, choose school criteria, estimate basic cost, and understand the registration flow. This guidance is based on public MYB/Asean Vietnam content and should be confirmed with admin or MYB before payment."
+    : "Với du học tiếng Anh Philippines, tôi có thể giúp học viên xác định mục tiêu, so sánh Sparta/Semi-Sparta, chọn tiêu chí trường, nắm chi phí tham khảo và hiểu quy trình đăng ký cơ bản. Nội dung này dựa trên thông tin công khai của MYB/Asean Việt Nam và cần xác nhận lại với admin hoặc MYB trước khi thanh toán.";
+}
+
+function nexaVisibleScopeText(role) {
+  if (currentLanguage === "en") {
+    return role === "teacher"
+      ? "Dashboard, Students, Teaching Schedule, Teaching Pay, Notifications, Video call, Profile, language, and Nexa AI usage"
+      : "Dashboard, Timetable, Teachers, Tuition, Placement Test, Notifications, Video call, Profile, language, Nexa AI usage, and Philippines English-study guidance";
+  }
+  return role === "teacher"
+    ? "Tổng quan, Học viên, Lịch dạy, Tiền dạy, Thông báo, Video call, Hồ sơ, Ngôn ngữ và cách dùng Nexa AI"
+    : "Tổng quan, Thời khóa biểu, Giáo viên, Học phí, Test đầu vào, Thông báo, Video call, Hồ sơ, Ngôn ngữ, cách dùng Nexa AI và tư vấn học tiếng Anh tại Philippines";
 }
 
 function isNexaAssistantInScope(text) {
@@ -5483,7 +5772,13 @@ function isNexaAssistantInScope(text) {
     "cooking",
     "game",
     "chinh tri",
-    "politics"
+    "politics",
+    "bai tap toan",
+    "math homework",
+    "viet van",
+    "essay writing",
+    "code",
+    "lap trinh"
   ];
   if (matchesAny(text, outOfScope)) return false;
   return matchesAny(text, [
@@ -5528,7 +5823,29 @@ function isNexaAssistantInScope(text) {
     "excel",
     "csv",
     "ngon ngu",
-    "language"
+    "language",
+    "tong quan",
+    "dashboard",
+    "thoi khoa bieu",
+    "timetable",
+    "tieng anh",
+    "english",
+    "du hoc",
+    "philippines",
+    "philipin",
+    "sparta",
+    "semi sparta",
+    "cebu",
+    "baguio",
+    "clark",
+    "subic",
+    "ielts",
+    "toeic",
+    "esl",
+    "business english",
+    "philinter",
+    "passport",
+    "pickup"
   ]);
 }
 
@@ -5746,5 +6063,5 @@ function safe(value) {
 
 function registerServiceWorker() {
   if (!("serviceWorker" in navigator) || !canUseServerApi()) return;
-  navigator.serviceWorker.register("service-worker.js?v=20260530-nexa-ai").catch(() => {});
+  navigator.serviceWorker.register("service-worker.js?v=20260530-nexa-ai-guide").catch(() => {});
 }

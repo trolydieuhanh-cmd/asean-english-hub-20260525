@@ -1380,6 +1380,22 @@ tr:last-child td {
 }
 
 .assistant-prompts {
+  display: grid;
+  gap: 12px;
+}
+
+.assistant-prompt-group {
+  display: grid;
+  gap: 8px;
+}
+
+.assistant-prompt-group h4 {
+  margin: 0;
+  color: var(--ink);
+  font-size: 13px;
+}
+
+.assistant-prompt-list {
   display: flex;
   flex-wrap: wrap;
   gap: 8px;
