@@ -1276,6 +1276,115 @@ tr:last-child td {
   display: block;
 }
 
+.nexa-assistant-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 320px;
+  gap: 16px;
+  align-items: start;
+}
+
+.nexa-assistant-main {
+  min-height: 520px;
+}
+
+.nexa-chat-window {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  height: min(56vh, 520px);
+  min-height: 320px;
+  overflow: auto;
+  padding: 12px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: #f8fafc;
+}
+
+.nexa-message {
+  display: flex;
+}
+
+.nexa-message.from-user {
+  justify-content: flex-end;
+}
+
+.nexa-bubble {
+  max-width: min(620px, 88%);
+  padding: 10px 12px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: var(--white);
+  box-shadow: var(--shadow);
+}
+
+.nexa-message.from-user .nexa-bubble {
+  border-color: rgba(13, 148, 136, 0.3);
+  background: #ecfdf5;
+}
+
+.nexa-bubble strong {
+  display: block;
+  margin-bottom: 4px;
+  font-size: 13px;
+  color: var(--ink);
+}
+
+.nexa-bubble p {
+  margin: 0;
+  color: var(--ink);
+  line-height: 1.55;
+  white-space: pre-wrap;
+}
+
+.nexa-bubble small {
+  display: block;
+  margin-top: 6px;
+  color: var(--muted);
+  font-size: 11px;
+}
+
+.nexa-chat-form {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 10px;
+  margin-top: 12px;
+}
+
+.nexa-rules-panel {
+  display: grid;
+  gap: 12px;
+}
+
+.nexa-rules-panel h3 {
+  margin: 0;
+  font-size: 16px;
+}
+
+.nexa-rules-panel ul {
+  margin: 0;
+  padding-left: 18px;
+  color: var(--muted);
+  line-height: 1.5;
+}
+
+.nexa-orb {
+  display: grid;
+  place-items: center;
+  width: 54px;
+  height: 54px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #0d9488, #f97316);
+  color: #ffffff;
+  font-weight: 900;
+  letter-spacing: 0;
+}
+
+.assistant-prompts {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
 .google-meet-panel {
   min-height: 360px;
   display: grid;
@@ -1413,6 +1522,10 @@ tr:last-child td {
   .score-grid,
   .assignment-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .nexa-assistant-layout {
+    grid-template-columns: 1fr;
   }
 }
 
@@ -1808,6 +1921,15 @@ tr:last-child td {
     min-height: 30px;
     padding: 6px 8px;
     font-size: 12px;
+  }
+
+  .nexa-chat-form {
+    grid-template-columns: 1fr;
+  }
+
+  .nexa-chat-window {
+    height: 420px;
+    min-height: 280px;
   }
 
   .badge,

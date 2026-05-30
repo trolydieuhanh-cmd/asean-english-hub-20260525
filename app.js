@@ -3,6 +3,7 @@ const SESSION_KEY = "asean-english-hub-current-account";
 const AUTH_TOKEN_KEY = "asean-english-hub-session-token";
 const CSRF_TOKEN_KEY = "asean-english-hub-csrf-token";
 const LANGUAGE_KEY = "asean-english-hub-language";
+const NEXA_ASSISTANT_KEY = "asean-english-hub-nexa-assistant";
 const SYNC_INTERVAL_MS = 3000;
 const LOGO_SRC = "assets/asean-holding-logo.png";
 const COPYRIGHT_TEXT = "Bản quyền thuộc về Công ty cổ phần Asean Holding.";
@@ -15,6 +16,11 @@ const EN_TRANSLATIONS = {
   "Tiếng Việt": "Vietnamese",
   "English": "English",
   "Ngôn ngữ": "Language",
+  "Nexa AI": "Nexa AI",
+  "Trợ lý Nexa AI": "Nexa AI Assistant",
+  "Hỏi Nexa AI": "Ask Nexa AI",
+  "Nhập câu hỏi về cách sử dụng phần mềm...": "Enter a question about how to use this software...",
+  "Nexa AI chỉ hướng dẫn sử dụng phần mềm này và không trả lời nội dung ngoài phạm vi.": "Nexa AI only guides users on this software and does not answer out-of-scope content.",
   "Bản quyền thuộc về Công ty cổ phần Asean Holding.": "Copyright belongs to Asean Holding Joint Stock Company.",
   "Quản lý lớp tiếng Anh online toàn cầu": "Global online English class management",
   "Theo dõi giáo viên Philippines, học viên quốc tế, lịch học, giờ dạy, học phí và phòng video từ một màn hình duy nhất.": "Track Filipino teachers, international students, schedules, teaching hours, tuition and video rooms from one screen.",
@@ -705,6 +711,7 @@ let selectedVideoLessonId = null;
 let recordingState = null;
 let auditLog = [];
 let auditLogLoaded = false;
+let nexaAssistantMessages = [];
 let serverOnline = false;
 let toastTimer = null;
 let syncTimer = null;
@@ -1506,6 +1513,7 @@ function renderView() {
     if (activeView === "finance") return renderTeacherFinance();
     if (activeView === "notifications") return renderNotifications();
     if (activeView === "video") return renderVideoCenter();
+    if (activeView === "assistant") return renderNexaAssistant();
     if (activeView === "profile") return renderProfile();
   }
 
@@ -1516,6 +1524,7 @@ function renderView() {
     if (activeView === "placement") return renderPlacementTests();
     if (activeView === "notifications") return renderNotifications();
     if (activeView === "video") return renderVideoCenter();
+    if (activeView === "assistant") return renderNexaAssistant();
     if (activeView === "profile") return renderProfile();
   }
 
@@ -2779,6 +2788,56 @@ function renderAuditAdmin() {
   `;
 }
 
+function renderNexaAssistant() {
+  const user = currentAccount();
+  if (!["teacher", "student"].includes(user?.role)) return `<div class="empty">Không tìm thấy màn hình phù hợp.</div>`;
+  const messages = currentNexaAssistantMessages();
+  return `
+    <section class="nexa-assistant-layout">
+      <div class="panel nexa-assistant-main">
+        <div class="panel-header">
+          <div class="panel-title">
+            <h2>Trợ lý Nexa AI</h2>
+            <p>Nexa AI chỉ hướng dẫn sử dụng phần mềm này và không trả lời nội dung ngoài phạm vi.</p>
+          </div>
+          <button class="btn btn-secondary" type="button" data-action="clear-nexa-ai">${icon("trash-2")} Xóa hội thoại</button>
+        </div>
+        <div class="nexa-chat-window" aria-live="polite">
+          ${messages.map(renderNexaAssistantMessage).join("")}
+        </div>
+        <form id="nexa-assistant-form" class="nexa-chat-form">
+          <input class="input" name="question" autocomplete="off" placeholder="Nhập câu hỏi về cách sử dụng phần mềm..." required />
+          <button class="btn btn-primary" type="submit">${icon("send")} Hỏi Nexa AI</button>
+        </form>
+      </div>
+      <aside class="panel nexa-rules-panel">
+        <div class="nexa-orb">AI</div>
+        <h3>Nguyên tắc làm việc</h3>
+        <ul>
+          ${nexaAssistantRules().map((rule) => `<li>${safe(rule)}</li>`).join("")}
+        </ul>
+        <div class="assistant-prompts">
+          ${nexaAssistantQuickPrompts(user.role)
+            .map((prompt) => `<button class="btn btn-secondary btn-small" type="button" data-action="nexa-quick-prompt" data-prompt="${safe(prompt)}">${safe(prompt)}</button>`)
+            .join("")}
+        </div>
+      </aside>
+    </section>
+  `;
+}
+
+function renderNexaAssistantMessage(message) {
+  return `
+    <article class="nexa-message ${message.from === "user" ? "from-user" : "from-ai"}">
+      <div class="nexa-bubble">
+        <strong>${message.from === "user" ? safe(currentAccount()?.name || "Bạn") : "Nexa AI"}</strong>
+        <p>${safe(message.text)}</p>
+        <small>${safe(message.time || "")}</small>
+      </div>
+    </article>
+  `;
+}
+
 function renderAuditRow(event) {
   const actor = event.actor
     ? `${safe(event.actor.name || "N/A")}<div class="meta-subtitle">${safe(event.actor.role || "")} - ${safe(event.actor.email || "")}</div>`
@@ -3307,6 +3366,17 @@ function handleClick(event) {
     return;
   }
 
+  if (action === "clear-nexa-ai") {
+    resetNexaAssistantMessages();
+    render();
+    return;
+  }
+
+  if (action === "nexa-quick-prompt") {
+    submitNexaAssistantQuestion(target.dataset.prompt || "");
+    return;
+  }
+
   if (action === "logout") {
     logout();
     return;
@@ -3461,6 +3531,14 @@ function handleSubmit(event) {
   if (["teacher", "student"].includes(currentAccount()?.role) && event.target.id === "change-password-form") {
     event.preventDefault();
     changeOwnPassword(event.target);
+    return;
+  }
+
+  if (["teacher", "student"].includes(currentAccount()?.role) && event.target.id === "nexa-assistant-form") {
+    event.preventDefault();
+    const question = String(new FormData(event.target).get("question") || "").trim();
+    submitNexaAssistantQuestion(question);
+    event.target.reset();
     return;
   }
 
@@ -4628,6 +4706,7 @@ function navItems(role) {
       { id: "finance", label: "Tiền dạy", icon: "wallet" },
       common.notifications,
       common.video,
+      { id: "assistant", label: "Nexa AI", icon: "bot" },
       common.profile
     ];
   }
@@ -4639,6 +4718,7 @@ function navItems(role) {
     { id: "placement", label: "Test đầu vào", icon: "clipboard-check" },
     common.notifications,
     common.video,
+    { id: "assistant", label: "Nexa AI", icon: "bot" },
     common.profile
   ];
 }
@@ -4657,6 +4737,7 @@ function viewTitle(view, role) {
     placement: "Test đầu vào",
     notifications: "Thông báo nhắc nhở",
     video: "Trung tâm video call",
+    assistant: "Trợ lý Nexa AI",
     audit: "Nhật ký bảo mật",
     settings: "Cài đặt hệ thống",
     profile: "Hồ sơ"
@@ -5219,6 +5300,260 @@ function currentLocale() {
   return currentLanguage === "en" ? "en-US" : "vi-VN";
 }
 
+function nexaAssistantRules() {
+  if (currentLanguage === "en") {
+    return [
+      "Only answer questions about using Asean Holding English Hub.",
+      "Do not answer topics outside the software, such as news, finance, health, legal advice, entertainment, or general knowledge.",
+      "Guide users by role: teachers see teaching, schedule, class, salary, profile, and notification features; students see learning, schedule, class, tuition, placement test, profile, and notification features.",
+      "If a question is unclear, ask the user to name the exact screen or button they are using."
+    ];
+  }
+  return [
+    "Chỉ trả lời các câu hỏi về cách sử dụng phần mềm Asean Holding English Hub.",
+    "Không trả lời nội dung ngoài phần mềm như tin tức, tài chính, y tế, pháp lý, giải trí hoặc kiến thức chung.",
+    "Hướng dẫn đúng theo vai trò: giáo viên dùng lịch dạy, mở lớp, video call, tiền dạy, hồ sơ và thông báo; học viên dùng lịch học, vào lớp, học phí, test đầu vào, hồ sơ và thông báo.",
+    "Nếu câu hỏi chưa rõ, yêu cầu người dùng nói rõ màn hình hoặc nút đang thao tác."
+  ];
+}
+
+function currentNexaAssistantMessages() {
+  if (!nexaAssistantMessages.length) {
+    loadNexaAssistantMessages();
+  }
+  return nexaAssistantMessages;
+}
+
+function nexaAssistantStorageKey() {
+  return `${NEXA_ASSISTANT_KEY}:${currentAccount()?.id || "guest"}:${currentLanguage}`;
+}
+
+function defaultNexaAssistantMessages() {
+  return [
+    {
+      from: "ai",
+      text:
+        currentLanguage === "en"
+          ? "Hello, I am Nexa AI. I can guide you on using this software only. Ask me about schedules, classes, video lessons, tuition, salary, placement tests, notifications, profile, or password changes."
+          : "Xin chào, tôi là Nexa AI. Tôi chỉ hướng dẫn cách sử dụng phần mềm này. Bạn có thể hỏi về lịch học, lớp online, video call, học phí, tiền dạy, test đầu vào, thông báo, hồ sơ hoặc đổi mật khẩu.",
+      time: nowTime()
+    }
+  ];
+}
+
+function loadNexaAssistantMessages() {
+  try {
+    const stored = JSON.parse(localStorage.getItem(nexaAssistantStorageKey()) || "[]");
+    nexaAssistantMessages = Array.isArray(stored) && stored.length ? stored : defaultNexaAssistantMessages();
+  } catch {
+    nexaAssistantMessages = defaultNexaAssistantMessages();
+  }
+}
+
+function saveNexaAssistantMessages() {
+  localStorage.setItem(nexaAssistantStorageKey(), JSON.stringify(nexaAssistantMessages.slice(-30)));
+}
+
+function resetNexaAssistantMessages() {
+  nexaAssistantMessages = defaultNexaAssistantMessages();
+  saveNexaAssistantMessages();
+  showToast(currentLanguage === "en" ? "Nexa AI conversation cleared." : "Đã xóa hội thoại Nexa AI.");
+}
+
+function submitNexaAssistantQuestion(question) {
+  if (!question) return;
+  currentNexaAssistantMessages();
+  nexaAssistantMessages.push({ from: "user", text: question, time: nowTime() });
+  nexaAssistantMessages.push({ from: "ai", text: nexaAssistantAnswer(question), time: nowTime() });
+  saveNexaAssistantMessages();
+  render();
+  window.setTimeout(() => {
+    const chatWindow = document.querySelector(".nexa-chat-window");
+    if (chatWindow) chatWindow.scrollTop = chatWindow.scrollHeight;
+  }, 40);
+}
+
+function nexaAssistantQuickPrompts(role) {
+  if (currentLanguage === "en") {
+    return role === "teacher"
+      ? ["How do I open a class?", "Where do I see my schedule?", "How is my teaching pay calculated?"]
+      : ["How do I join a class?", "Where do I see my tuition?", "How do I take a placement test?"];
+  }
+  return role === "teacher"
+    ? ["Cách mở lớp online?", "Xem lịch dạy ở đâu?", "Tiền dạy được tính thế nào?"]
+    : ["Cách vào lớp online?", "Xem học phí ở đâu?", "Làm bài test đầu vào thế nào?"];
+}
+
+function nexaAssistantAnswer(question) {
+  const role = currentAccount()?.role || "";
+  const normalized = normalizeTextForMatch(question);
+  const en = currentLanguage === "en";
+
+  if (!isNexaAssistantInScope(normalized)) {
+    return en
+      ? "I can only guide you on using Asean Holding English Hub. Please ask about schedules, online classes, video calls, tuition, teaching pay, placement tests, notifications, profile, or password changes."
+      : "Tôi chỉ hỗ trợ hướng dẫn sử dụng phần mềm Asean Holding English Hub. Vui lòng hỏi về lịch học, lớp online, video call, học phí, tiền dạy, test đầu vào, thông báo, hồ sơ hoặc đổi mật khẩu.";
+  }
+
+  if (matchesAny(normalized, ["mo lop", "open class", "bat dau lop", "start class"])) {
+    if (role === "teacher") {
+      return en
+        ? "Open Video call, choose the scheduled lesson that is due, then press Open class. You can only open classes that admin already scheduled for you. After opening, the student receives a notification and can press Join class."
+        : "Vào mục Video call, chọn buổi học đã được admin xếp lịch, rồi bấm Mở lớp. Giáo viên chỉ mở được lớp đã có trong lịch dạy. Sau khi mở, học viên sẽ nhận thông báo và bấm Vào lớp để tham gia.";
+    }
+    return en
+      ? "Students cannot open classes. Wait for the teacher or admin to open the scheduled class, then use the notification or Video call screen to join."
+      : "Học viên không mở lớp. Bạn chờ giáo viên hoặc admin mở lớp theo lịch, sau đó bấm thông báo hoặc vào mục Video call để tham gia.";
+  }
+
+  if (matchesAny(normalized, ["video", "meet", "vao lop", "join class", "camera", "micro", "mic"])) {
+    return en
+      ? "Use Video call to enter the live lesson. If the class has a Google Meet link, pressing Join class opens Meet in a new tab. Allow camera and microphone permission in the browser when asked."
+      : "Vào mục Video call để vào buổi học online. Nếu lớp có link Google Meet, bấm Vào lớp để mở Meet ở tab mới. Khi trình duyệt hỏi quyền, hãy cho phép camera và micro.";
+  }
+
+  if (matchesAny(normalized, ["lich", "schedule", "doi lich", "sua lich", "calendar"])) {
+    return en
+      ? "Open Schedule to view your lessons. Admin creates and edits schedules. When a lesson is changed, the related teacher and student receive a notification. The system warns admin if teacher or student time overlaps."
+      : "Vào mục Lịch để xem lịch học/dạy. Admin là người tạo và sửa lịch. Khi lịch được sửa, giáo viên và học viên liên quan sẽ nhận thông báo. Hệ thống sẽ cảnh báo admin nếu lịch của giáo viên hoặc học viên bị trùng.";
+  }
+
+  if (matchesAny(normalized, ["thong bao", "notification", "bao tin", "alert"])) {
+    return en
+      ? "Notifications appear after login and when lessons are created, edited, or opened. Check the notification area on the dashboard and the related screen, such as Schedule or Video call."
+      : "Thông báo hiển thị sau khi đăng nhập và khi có lịch mới, lịch được sửa hoặc lớp được mở. Bạn kiểm tra khu vực thông báo ở Tổng quan và màn hình liên quan như Lịch hoặc Video call.";
+  }
+
+  if (matchesAny(normalized, ["mat khau", "password", "ho so", "profile", "email", "tai khoan", "account"])) {
+    return en
+      ? "Open Profile to review your account information and change your password. If you cannot log in or need your email changed, contact admin."
+      : "Vào mục Hồ sơ để xem thông tin tài khoản và đổi mật khẩu. Nếu không đăng nhập được hoặc cần đổi email, hãy liên hệ admin.";
+  }
+
+  if (matchesAny(normalized, ["hoc phi", "tuition", "payment", "so tien hoc", "pay student"])) {
+    return en
+      ? "Students can view tuition in their finance or dashboard area. Tuition is calculated per lesson using the amount admin entered for that specific lesson."
+      : "Học viên xem học phí trong phần tài chính hoặc tổng quan. Học phí được tính theo từng buổi học, dựa trên số tiền admin nhập riêng cho buổi đó.";
+  }
+
+  if (matchesAny(normalized, ["tien day", "salary", "teacher pay", "luong", "thu lao"])) {
+    return en
+      ? "Teachers can view teaching pay in their finance or dashboard area. Pay is calculated per completed lesson using the amount admin entered for that lesson."
+      : "Giáo viên xem tiền dạy trong phần tài chính hoặc tổng quan. Tiền dạy được tính theo từng buổi đã dạy, dựa trên số tiền admin nhập riêng cho buổi đó.";
+  }
+
+  if (matchesAny(normalized, ["test", "placement", "dau vao", "nghe", "noi", "doc", "phat am", "record"])) {
+    if (role === "teacher") {
+      return en
+        ? "Placement tests are between admin and students, so this feature is not shown in teacher accounts."
+        : "Test đầu vào là phần giữa admin và học viên, nên tài khoản giáo viên không hiển thị chức năng này.";
+    }
+    return en
+      ? "Open Placement test to take assigned tests. Listening may include audio. Speaking may require recording with the microphone. Submit the test so admin can review and build your study path."
+      : "Vào mục Test đầu vào để làm bài được giao. Phần nghe có thể có audio. Phần nói có thể cần bấm micro để ghi âm. Sau khi nộp, admin sẽ đánh giá và xây dựng lộ trình học.";
+  }
+
+  if (matchesAny(normalized, ["dang xuat", "logout", "language", "ngon ngu", "tieng anh", "tieng viet"])) {
+    return en
+      ? "Use the language selector on the login screen or in the account area to switch Vietnamese/English. Use Logout when finished so your account status changes to offline."
+      : "Dùng nút chọn ngôn ngữ ở màn hình đăng nhập hoặc trong tài khoản để đổi Anh/Việt. Khi dùng xong, bấm Đăng xuất để trạng thái tài khoản chuyển sang offline.";
+  }
+
+  return en
+    ? "This is within the software scope, but I need the exact screen or button name to guide you precisely. Please tell me where you are in the app."
+    : "Nội dung này thuộc phạm vi phần mềm, nhưng tôi cần biết chính xác bạn đang ở màn hình hoặc nút nào để hướng dẫn đúng. Vui lòng nói rõ vị trí bạn đang thao tác.";
+}
+
+function isNexaAssistantInScope(text) {
+  const outOfScope = [
+    "thoi tiet",
+    "weather",
+    "tin tuc",
+    "news",
+    "co phieu",
+    "stock",
+    "crypto",
+    "bong da",
+    "football",
+    "phap ly",
+    "legal",
+    "y te",
+    "medical",
+    "nau an",
+    "cooking",
+    "game",
+    "chinh tri",
+    "politics"
+  ];
+  if (matchesAny(text, outOfScope)) return false;
+  return matchesAny(text, [
+    "phan mem",
+    "software",
+    "he thong",
+    "system",
+    "tai khoan",
+    "account",
+    "dang nhap",
+    "login",
+    "dang xuat",
+    "logout",
+    "mat khau",
+    "password",
+    "ho so",
+    "profile",
+    "lich",
+    "schedule",
+    "lop",
+    "class",
+    "video",
+    "meet",
+    "giao vien",
+    "teacher",
+    "hoc vien",
+    "student",
+    "thong bao",
+    "notification",
+    "hoc phi",
+    "tuition",
+    "tien day",
+    "salary",
+    "test",
+    "placement",
+    "nghe",
+    "noi",
+    "doc",
+    "phat am",
+    "micro",
+    "camera",
+    "excel",
+    "csv",
+    "ngon ngu",
+    "language"
+  ]);
+}
+
+function matchesAny(text, keywords) {
+  return keywords.some((keyword) => text.includes(keyword));
+}
+
+function normalizeTextForMatch(value) {
+  return String(value || "")
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/đ/g, "d")
+    .replace(/[^a-z0-9\s]/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+function nowTime() {
+  return new Intl.DateTimeFormat(currentLocale(), {
+    hour: "2-digit",
+    minute: "2-digit"
+  }).format(new Date());
+}
+
 function translate(value) {
   if (currentLanguage !== "en") return String(value ?? "");
   const text = String(value ?? "");
@@ -5411,5 +5746,5 @@ function safe(value) {
 
 function registerServiceWorker() {
   if (!("serviceWorker" in navigator) || !canUseServerApi()) return;
-  navigator.serviceWorker.register("service-worker.js?v=20260525-bulk-schedule").catch(() => {});
+  navigator.serviceWorker.register("service-worker.js?v=20260530-nexa-ai").catch(() => {});
 }
