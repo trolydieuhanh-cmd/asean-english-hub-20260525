@@ -2811,24 +2811,28 @@ function renderNexaAssistant() {
         </form>
       </div>
       <aside class="panel nexa-rules-panel">
-        <div class="nexa-orb">AI</div>
-        <h3>Nguyên tắc làm việc</h3>
-        <ul>
-          ${nexaAssistantRules().map((rule) => `<li>${safe(rule)}</li>`).join("")}
-        </ul>
-        <div class="assistant-prompts">
-          ${nexaAssistantPromptGroups(user.role)
-            .map(
-              (group) => `
-                <section class="assistant-prompt-group">
-                  <h4>${safe(group.title)}</h4>
-                  <div class="assistant-prompt-list">
-                    ${group.prompts.map((prompt) => `<button class="btn btn-secondary btn-small" type="button" data-action="nexa-quick-prompt" data-prompt="${safe(prompt)}">${safe(prompt)}</button>`).join("")}
-                  </div>
-                </section>
-              `
-            )
-            .join("")}
+        <div class="nexa-rules-head">
+          <div class="nexa-orb">AI</div>
+          <h3>Nguyên tắc làm việc</h3>
+        </div>
+        <div class="nexa-rules-scroll">
+          <ul>
+            ${nexaAssistantRules().map((rule) => `<li>${safe(rule)}</li>`).join("")}
+          </ul>
+          <div class="assistant-prompts">
+            ${nexaAssistantPromptGroups(user.role)
+              .map(
+                (group) => `
+                  <section class="assistant-prompt-group">
+                    <h4>${safe(group.title)}</h4>
+                    <div class="assistant-prompt-list">
+                      ${group.prompts.map((prompt) => `<button class="btn btn-secondary btn-small" type="button" data-action="nexa-quick-prompt" data-prompt="${safe(prompt)}">${safe(prompt)}</button>`).join("")}
+                    </div>
+                  </section>
+                `
+              )
+              .join("")}
+          </div>
         </div>
       </aside>
     </section>
@@ -6154,5 +6158,5 @@ function safe(value) {
 
 function registerServiceWorker() {
   if (!("serviceWorker" in navigator) || !canUseServerApi()) return;
-  navigator.serviceWorker.register("service-worker.js?v=20260530-nexa-ai-study").catch(() => {});
+  navigator.serviceWorker.register("service-worker.js?v=20260530-nexa-ai-scroll").catch(() => {});
 }

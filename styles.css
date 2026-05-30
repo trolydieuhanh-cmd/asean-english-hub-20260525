@@ -1355,11 +1355,26 @@ tr:last-child td {
 
 .nexa-rules-panel {
   display: grid;
-  gap: 12px;
+  grid-template-rows: auto minmax(0, 1fr);
+  gap: 10px;
   position: sticky;
   top: 16px;
-  max-height: calc(100dvh - 120px);
+  height: min(720px, calc(100dvh - 150px));
+  min-height: 420px;
+  overflow: hidden;
+}
+
+.nexa-rules-head {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: 10px;
+  align-items: center;
+}
+
+.nexa-rules-scroll {
+  min-height: 0;
   overflow-y: auto;
+  padding-right: 6px;
   overscroll-behavior: contain;
   scrollbar-gutter: stable;
 }
@@ -1369,7 +1384,7 @@ tr:last-child td {
   font-size: 16px;
 }
 
-.nexa-rules-panel ul {
+.nexa-rules-scroll ul {
   margin: 0;
   padding-left: 18px;
   color: var(--muted);
@@ -1557,7 +1572,8 @@ tr:last-child td {
   .nexa-rules-panel {
     position: relative;
     top: auto;
-    max-height: 360px;
+    height: 360px;
+    min-height: 0;
   }
 }
 
