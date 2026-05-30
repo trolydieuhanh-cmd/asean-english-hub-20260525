@@ -56,6 +56,14 @@ node server.js
 
 Nếu `/docker/asean-english-hub` đã tồn tại, hãy sao lưu `.env` và `data/asean-hub.json` trước khi thay bản mới.
 
+Khi cập nhật bản mới bằng `rsync` hoặc giải nén bằng quyền `root`, luôn đặt lại quyền thư mục dữ liệu cho user chạy service để hệ thống lưu đăng nhập, online/offline và lịch học:
+
+```bash
+sudo chown -R www-data:www-data /docker/asean-english-hub/data
+sudo chmod 750 /docker/asean-english-hub/data
+sudo chmod 640 /docker/asean-english-hub/data/asean-hub.json
+```
+
 ## Chạy bằng Docker Compose
 
 ```bash
@@ -90,6 +98,8 @@ Copy thư mục dự án vào `/docker/asean-english-hub`, sau đó:
 ```bash
 sudo cp deploy/asean-english-hub.service /etc/systemd/system/
 sudo chown -R www-data:www-data /docker/asean-english-hub
+sudo chmod 750 /docker/asean-english-hub/data
+sudo chmod 640 /docker/asean-english-hub/data/asean-hub.json
 sudo systemctl daemon-reload
 sudo systemctl enable --now asean-english-hub
 sudo systemctl status asean-english-hub
